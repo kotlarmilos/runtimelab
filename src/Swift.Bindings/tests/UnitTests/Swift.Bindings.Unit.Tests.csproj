@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <PreTestCommand>cd $(OutputPath)$(TargetFramework) &amp;&amp; cmake $(MSBuildThisFileDirectory) &amp;&amp; make</PreTestCommand>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Swift.Bindings.csproj">
+      <ReferenceSourceTarget></ReferenceSourceTarget>
+    </ProjectReference>
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.8.0" />
+  </ItemGroup>
+
+  <Target Name="CompileNativeLibs" BeforeTargets="PrepareForBuild" Condition="'$(OS)' != 'Windows_NT'">
+    <!-- Generate Swift libraries -->
+    <Exec Command="$(PreTestCommand)" />
+  </Target>
+</Project>
+

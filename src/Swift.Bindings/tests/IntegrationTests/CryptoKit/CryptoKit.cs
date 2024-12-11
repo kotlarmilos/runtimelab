@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Swift;
 using System.Security.Cryptography;
 
-namespace Test
+namespace BindingsGeneration.Tests
 {
     /// <summary>
     /// Represents ChaChaPoly in C#.
@@ -20,7 +20,7 @@ namespace Test
         /// </summary>
         public sealed unsafe class Nonce : IDisposable, ISwiftObject
         {
-            private static nuint PayloadSize = (nuint)((Runtime.ValueWitnessTable*)Test.Runtime.GetValueWitnessTable(Metadata))->Size;
+            private static nuint PayloadSize = (nuint)((Runtime.ValueWitnessTable*)Runtime.GetValueWitnessTable(Metadata))->Size;
 
             private readonly void* _payload;
 
@@ -38,7 +38,7 @@ namespace Test
                 _payload = NativeMemory.Alloc(PayloadSize);
                 SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(_payload);
 
-                void* metadata = Test.Runtime.GetMetadata(data);
+                void* metadata = Runtime.GetMetadata(data);
                 void* conformanceDescriptor = IDataProtocol.GetConformanceDescriptor;
                 void* witnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, metadata, null);
 
@@ -81,8 +81,8 @@ namespace Test
 
             public SealedBox(ChaChaPoly.Nonce nonce, Data ciphertext, Data tag)
             {
-                void* ciphertextMetadata = Test.Runtime.GetMetadata(ciphertext);
-                void* tagMetadata = Test.Runtime.GetMetadata(tag);
+                void* ciphertextMetadata = Runtime.GetMetadata(ciphertext);
+                void* tagMetadata = Runtime.GetMetadata(tag);
                 void* conformanceDescriptor = IDataProtocol.GetConformanceDescriptor;
                 void* ciphertextWitnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, ciphertextMetadata, null);
                 void* tagWitnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, tagMetadata, null);
@@ -112,8 +112,8 @@ namespace Test
         /// Encrypts the plaintext using the key, nonce, and authenticated data.
         /// </summary>
         public static unsafe SealedBox seal<Plaintext, AuthenticateData>(Plaintext plaintext, SymmetricKey key, Nonce nonce, AuthenticateData aad, out SwiftError error) where Plaintext : unmanaged, ISwiftObject where AuthenticateData : unmanaged, ISwiftObject {
-            void* plaintextMetadata = Test.Runtime.GetMetadata(plaintext);
-            void* aadMetadata = Test.Runtime.GetMetadata(aad);
+            void* plaintextMetadata = Runtime.GetMetadata(plaintext);
+            void* aadMetadata = Runtime.GetMetadata(aad);
             void* conformanceDescriptor = IDataProtocol.GetConformanceDescriptor;
             void* plaintextWitnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, plaintextMetadata, null);
             void* aadWitnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, aadMetadata, null);
@@ -136,7 +136,7 @@ namespace Test
         /// Decrypts the sealed box using the key and authenticated data.
         /// </summary>
         public static unsafe Data open<AuthenticateData>(SealedBox sealedBox, SymmetricKey key, AuthenticateData aad, out SwiftError error) where AuthenticateData : unmanaged, ISwiftObject {
-            void* metadata = Test.Runtime.GetMetadata(aad);
+            void* metadata = Runtime.GetMetadata(aad);
             void* conformanceDescriptor = IDataProtocol.GetConformanceDescriptor;
             void* witnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, metadata, null);
 
@@ -162,7 +162,7 @@ namespace Test
         /// </summary>
         public sealed unsafe class Nonce : IDisposable, ISwiftObject
         {
-            private static nuint PayloadSize = (nuint)((Runtime.ValueWitnessTable*)Test.Runtime.GetValueWitnessTable(Metadata))->Size;
+            private static nuint PayloadSize = (nuint)((Runtime.ValueWitnessTable*)Runtime.GetValueWitnessTable(Metadata))->Size;
 
             private readonly void* _payload;
 
@@ -180,7 +180,7 @@ namespace Test
                 _payload = NativeMemory.Alloc(PayloadSize);
                 SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(_payload);
 
-                void* metadata = Test.Runtime.GetMetadata(data);
+                void* metadata = Runtime.GetMetadata(data);
                 void* conformanceDescriptor = IDataProtocol.GetConformanceDescriptor;
                 void* witnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, metadata, null);
 
@@ -218,7 +218,7 @@ namespace Test
         /// </summary>
         public sealed unsafe class SealedBox : IDisposable, ISwiftObject
         {
-            private static nuint PayloadSize = (nuint)((Runtime.ValueWitnessTable*)Test.Runtime.GetValueWitnessTable(Metadata))->Size;
+            private static nuint PayloadSize = (nuint)((Runtime.ValueWitnessTable*)Runtime.GetValueWitnessTable(Metadata))->Size;
 
             private readonly void* _payload;
 
@@ -234,8 +234,8 @@ namespace Test
                 _payload = NativeMemory.Alloc(PayloadSize);
                 SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(_payload);
 
-                void* ciphertextMetadata = Test.Runtime.GetMetadata(ciphertext);
-                void* tagMetadata = Test.Runtime.GetMetadata(tag);
+                void* ciphertextMetadata = Runtime.GetMetadata(ciphertext);
+                void* tagMetadata = Runtime.GetMetadata(tag);
                 void* conformanceDescriptor = IDataProtocol.GetConformanceDescriptor;
                 void* ciphertextWitnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, ciphertextMetadata, null);
                 void* tagWitnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, tagMetadata, null);
@@ -289,8 +289,8 @@ namespace Test
             AesGcm.SealedBox sealedBox = new AesGcm.SealedBox();
             SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(sealedBox.Payload);
 
-            void* plaintextMetadata = Test.Runtime.GetMetadata(plaintext);
-            void* aadMetadata = Test.Runtime.GetMetadata(aad);
+            void* plaintextMetadata = Runtime.GetMetadata(plaintext);
+            void* aadMetadata = Runtime.GetMetadata(aad);
             void* conformanceDescriptor = IDataProtocol.GetConformanceDescriptor;
             void* plaintextWitnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, plaintextMetadata, null);
             void* aadWitnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, aadMetadata, null);
@@ -314,7 +314,7 @@ namespace Test
         /// Decrypts the sealed box using the key and authenticated data.
         /// </summary>
         public static unsafe Data open<AuthenticateData>(SealedBox sealedBox, SymmetricKey key, AuthenticateData aad, out SwiftError error) where AuthenticateData : unmanaged, ISwiftObject {
-            void* metadata = Test.Runtime.GetMetadata(aad);
+            void* metadata = Runtime.GetMetadata(aad);
             void* conformanceDescriptor = IDataProtocol.GetConformanceDescriptor;
             void* witnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, metadata, null);
 
@@ -335,7 +335,7 @@ namespace Test
     /// </summary>
     public sealed unsafe class SymmetricKey : IDisposable, ISwiftObject
     {
-        private static nuint PayloadSize = (nuint)((Runtime.ValueWitnessTable*)Test.Runtime.GetValueWitnessTable(Metadata))->Size;
+        private static nuint PayloadSize = (nuint)((Runtime.ValueWitnessTable*)Runtime.GetValueWitnessTable(Metadata))->Size;
 
         public readonly void* _payload;
 
@@ -353,7 +353,7 @@ namespace Test
             _payload = NativeMemory.Alloc(PayloadSize);
             SwiftIndirectResult swiftIndirectResult = new SwiftIndirectResult(_payload);
 
-            void* metadata = Test.Runtime.GetMetadata(data);
+            void* metadata = Runtime.GetMetadata(data);
             void* conformanceDescriptor = IContiguousBytes.GetConformanceDescriptor;
             void* witnessTable = Foundation.PInvoke_Swift_GetWitnessTable(conformanceDescriptor, metadata, null);
 

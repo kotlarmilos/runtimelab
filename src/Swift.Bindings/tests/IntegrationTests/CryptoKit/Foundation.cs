@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Reflection;
 
-namespace Test
+namespace BindingsGeneration.Tests
 {
     /// <summary>
     /// Represents a Swift type in C#.

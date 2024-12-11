@@ -1,19 +1,41 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+using Xunit;
 using System;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Swift;
 using System.Security.Cryptography;
 using System.Diagnostics;
-using AesGcm = Test.AesGcm;
+using AesGcm = BindingsGeneration.Tests.AesGcm;
 
-namespace Test
+
+namespace BindingsGeneration.Tests
 {
-    public class MainClass
+    public class CryptoKitTests: IClassFixture<CryptoKitTests.TestFixture>
     {
-        public static unsafe void AesGcmEncrypt(
+        private readonly TestFixture _fixture;
+
+        public CryptoKitTests(TestFixture fixture)
+        {
+            _fixture = fixture;
+        }
+
+        public class TestFixture
+        {
+            static TestFixture()
+            {
+                InitializeResources();
+            }
+
+            private static void InitializeResources()
+            {
+                // Initialize
+            }
+        }
+
+        private static unsafe void AesGcmEncrypt(
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> plaintext,
@@ -61,7 +83,7 @@ namespace Test
             }
         }
 
-        public static unsafe void AesGcmDecrypt(
+        private static unsafe void AesGcmDecrypt(
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> ciphertext,
@@ -107,7 +129,7 @@ namespace Test
             }
         }
 
-        public static unsafe void ChaCha20Poly1305Encrypt(
+        private static unsafe void ChaCha20Poly1305Encrypt(
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> plaintext,
@@ -154,7 +176,7 @@ namespace Test
             }
         }
 
-        public static unsafe void ChaCha20Poly1305Decrypt(
+        private static unsafe void ChaCha20Poly1305Decrypt(
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> ciphertext,
@@ -203,7 +225,9 @@ namespace Test
         private const int KeySizeInBytes = 256 / 8;
         private const int NonceSizeInBytes = 96 / 8;
         private const int TagSizeInBytes = 128 / 8;
-        public static int Main(string[] args)
+        
+        [Fact]
+        public static void TestUnsafePointerCryptoKit()
         {
             const int dataLength = 35;
             byte[] plaintext = Enumerable.Range(1, dataLength).Select(x => (byte)x).ToArray();
@@ -216,32 +240,14 @@ namespace Test
             ChaCha20Poly1305Encrypt(key, nonce, plaintext, ciphertext, tag, default);
             ChaCha20Poly1305Decrypt(key, nonce, ciphertext, tag, decrypted, default);
 
-            if (!plaintext.SequenceEqual(decrypted))
-            {
-                Console.WriteLine("ChaChaPoly decryption failed");
-                return 1;
-            }
-            else
-            {
-                Console.WriteLine("ChaChaPoly decryption succeeded");
-            }
+            Assert.True(plaintext.SequenceEqual(decrypted));
 
             decrypted = new byte[dataLength];
             AesGcmEncrypt(key, nonce, plaintext, ciphertext, tag, default);
             
             AesGcmDecrypt(key, nonce, ciphertext, tag, decrypted, default);
 
-            if (!plaintext.SequenceEqual(decrypted))
-            {
-                Console.WriteLine("AES-GCM decryption failed");
-                return 1;
-            }
-            else
-            {
-                Console.WriteLine("AES-GCM decryption succeeded");
-            }
-
-            return 0;
+            Assert.True(plaintext.SequenceEqual(decrypted));
         }
     }
 }

@@ -182,11 +182,12 @@ namespace BindingsGeneration
             }
 
             // Copy the Swift.Runtime library to the output directory
+            Directory.CreateDirectory(Path.Combine(Directory.GetParent(outputDirectory)!.FullName, "Library"));
             string[] fileEntries = Directory.GetFiles(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Library"));
             foreach (string filePath in fileEntries)
             {
                 string fileName = Path.GetFileName(filePath);
-                string destFilePath = Path.Combine(outputDirectory, fileName);
+                string destFilePath = Path.Combine(Directory.GetParent(outputDirectory)!.FullName, "Library", fileName);
                 File.Copy(filePath, destFilePath, true);
             }
         }
