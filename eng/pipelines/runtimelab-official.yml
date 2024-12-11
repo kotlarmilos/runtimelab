@@ -56,6 +56,7 @@ extends:
 
     - stage: Bindings
       displayName: Bindings
+      dependsOn: []
       jobs:
         - template: /eng/pipelines/common/templates/build-job.yml
           parameters:
