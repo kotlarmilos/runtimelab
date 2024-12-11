@@ -53,23 +53,3 @@ extends:
         parameters:
           isOfficialBuild: true
           enableSourceLinkValidation: true
-
-    - stage: Bindings
-      displayName: Bindings
-      dependsOn: []
-      jobs:
-        - template: /eng/pipelines/common/templates/build-job.yml
-          parameters:
-            osGroup: OSX
-            archType: arm64
-            runTests: true
-            pool:
-              vmImage: 'macOS-latest'
-
-        - template: /eng/pipelines/common/templates/build-job.yml
-          parameters:
-            osGroup: OSX
-            archType: x64
-            runTests: true
-            pool:
-              vmImage: 'macOS-latest'
