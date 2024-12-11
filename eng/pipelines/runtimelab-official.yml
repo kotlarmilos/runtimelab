@@ -31,25 +31,80 @@ variables:
 - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
   - name: TeamName
     value: dotnet-core
-extends:
-  template: /eng/pipelines/common/templates/template1es.yml@self
-  parameters:
-    stages:
-    - stage: Build
-      jobs:
-      - template: /eng/pipelines/common/templates/build-job.yml
-        parameters:
-          osGroup: Windows_NT
-          archType: x64
-          isOfficialBuild: true
-          runTests: false
-          pool:
-            name: $(DncEngInternalBuildPool)
-            image: 1es-windows-2022
-            os: windows
 
-    - ${{ if eq(variables.isOfficialBuild, true) }}:
-      - template: /eng/pipelines/common/templates/publish.yml
-        parameters:
-          isOfficialBuild: true
-          enableSourceLinkValidation: true
+stages:
+- stage: build-osx-arm64
+  displayName: Build on macOS ARM64
+  jobs:
+  - ${{ if or(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest')) }}:
+    - template: /eng/pipelines/common/templates/build-job.yml
+      parameters:
+        osGroup: OSX
+        archType: arm64
+        runTests: true
+        pool:
+          vmImage: 'macOS-latest'
+
+- stage: build-osx-x64
+  displayName: Build on macOS x64
+  jobs:
+  - ${{ if or(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest')) }}:
+    - template: /eng/pipelines/common/templates/build-job.yml
+      parameters:
+        osGroup: OSX
+        archType: x64
+        runTests: true
+        pool:
+          vmImage: 'macOS-latest'
+
+- stage: build-windows-x64
+  displayName: Build on Windows x64
+  jobs:
+  - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+    - template: /eng/pipelines/common/templates/template1es.yml@self
+      parameters:
+        stages:
+        - stage: Build
+          jobs:
+          - template: /eng/pipelines/common/templates/build-job.yml
+            parameters:
+              osGroup: Windows_NT
+              archType: x64
+              isOfficialBuild: true
+              runTests: false
+              pool:
+                name: $(DncEngInternalBuildPool)
+                image: 1es-windows-2022
+                os: windows
+
+- stage: publish-official
+  displayName: Publish Official Build
+  condition: eq(variables.isOfficialBuild, true)
+  jobs:
+  - template: /eng/pipelines/common/templates/publish.yml
+    parameters:
+      isOfficialBuild: true
+      enableSourceLinkValidation: true
+
+# extends:
+#   template: /eng/pipelines/common/templates/template1es.yml@self
+#   parameters:
+#     stages:
+#     - stage: Build
+#       jobs:
+#       - template: /eng/pipelines/common/templates/build-job.yml
+#         parameters:
+#           osGroup: Windows_NT
+#           archType: x64
+#           isOfficialBuild: true
+#           runTests: false
+#           pool:
+#             name: $(DncEngInternalBuildPool)
+#             image: 1es-windows-2022
+#             os: windows
+
+#     - ${{ if eq(variables.isOfficialBuild, true) }}:
+#       - template: /eng/pipelines/common/templates/publish.yml
+#         parameters:
+#           isOfficialBuild: true
+#           enableSourceLinkValidation: true
