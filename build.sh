@@ -13,4 +13,13 @@ while [[ -h $source ]]; do
 done
 
 scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
-"$scriptroot/eng/common/build.sh" --build --restore $@
+
+os_name=$(uname -s)
+projects=""
+
+if [[ "$os_name" != "Darwin" ]]; then
+  echo "Not running on macOS. Excluding test projects."
+  projects="--projects $(pwd)/src/Swift.Bindings/src/Swift.Bindings.csproj"
+fi
+
+"$scriptroot/eng/common/build.sh" --build --restore $projects $@
