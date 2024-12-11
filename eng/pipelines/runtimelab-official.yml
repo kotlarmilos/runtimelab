@@ -39,12 +39,14 @@ extends:
       jobs:
       - template: /eng/pipelines/common/templates/build-job.yml
         parameters:
-          osGroup: OSX
+          osGroup: Windows_NT
           archType: x64
           isOfficialBuild: true
           runTests: false
           pool:
-            vmImage: 'macOS-latest'
+            name: $(DncEngInternalBuildPool)
+            image: 1es-windows-2022
+            os: windows
 
     - ${{ if eq(variables.isOfficialBuild, true) }}:
       - template: /eng/pipelines/common/templates/publish.yml
