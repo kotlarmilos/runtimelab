@@ -66,4 +66,48 @@ public class TypeMetadataTests : IClassFixture<TypeMetadataTests.TestFixture>
         var contains = TypeMetadata.Cache.TryGet(typeof(System.Random), out var result);
         Assert.True(contains);
     }
+
+    public struct ThisOnlyGetsUsedHere : ISwiftObject {
+        static TypeMetadata ISwiftObject.GetTypeMetadata()
+        {
+            if (TypeMetadata.TryGetTypeMetadata (typeof(int), out var fakeMd)) {
+                return TypeMetadata.Cache.GetOrAdd(typeof(ThisOnlyGetsUsedHere), (type) => fakeMd.Value);
+            }
+            return TypeMetadata.Zero;
+        }
+    }
+
+    [Fact]
+    public static void CanTryGetMetadata()
+    {
+        Assert.True(TypeMetadata.TryGetTypeMetadata(typeof(ThisOnlyGetsUsedHere), out var md));
+    }
+
+    [Fact]
+    public static void CannotTryGetMetadata()
+    {
+        Assert.False(TypeMetadata.TryGetTypeMetadata(typeof(TypeMetadataTests), out var md));
+    }
+
+    [Fact]
+    public static void TryGetWillThrow()
+    {
+        Assert.Throws<Exception>(() => {
+            TypeMetadata.GetTypeMetadataOrThrow(typeof(TypeMetadataTests));
+        });
+    }
+
+    [Fact]
+    public static void CanTryGetOnInstance()
+    {
+        var thisOnly = new ThisOnlyGetsUsedHere();
+        Assert.True(TypeMetadata.TryGetTypeMetadata(thisOnly, out var md));
+    }
+
+    [Fact]
+    public static void CannotGetOnUnknownInstance()
+    {
+        var o = new object();
+        Assert.False(TypeMetadata.TryGetTypeMetadata(o, out var md));
+    }
 }
