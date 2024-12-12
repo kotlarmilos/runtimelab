@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.24)
 
 project(FunctionalTests)
 
-file(GLOB SOURCES "**/*.swift")
+file(GLOB_RECURSE SOURCES "${CMAKE_SOURCE_DIR}/**/*.swift")
 
 if (NOT SWIFT_COMPILER_TARGET)
     set(SWIFT_PLATFORM "macosx")

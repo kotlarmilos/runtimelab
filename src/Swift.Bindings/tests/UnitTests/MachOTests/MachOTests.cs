@@ -27,7 +27,7 @@ namespace BindingsGeneration.Tests
 
             private static void InitializeResources()
             {
-                _dylibPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MachOTests/libMachOTests.dylib");
+                _dylibPath = "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/Resources/BridgeSupport/CoreFoundation.dylib";
             }
 
             [Fact]

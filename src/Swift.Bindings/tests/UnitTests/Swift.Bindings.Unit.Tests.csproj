@@ -12,12 +12,6 @@
     <ProjectReference Include="../../src/Swift.Bindings.csproj">
       <ReferenceSourceTarget></ReferenceSourceTarget>
     </ProjectReference>
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.8.0" />
   </ItemGroup>
-
-  <Target Name="CompileNativeLibs" BeforeTargets="PrepareForBuild" Condition="'$(OS)' != 'Windows_NT'">
-    <!-- Generate Swift libraries -->
-    <Exec Command="$(PreTestCommand)" />
-  </Target>
 </Project>
 
