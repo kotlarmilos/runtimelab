@@ -312,9 +312,12 @@ public readonly struct TypeMetadata : IEquatable<TypeMetadata> {
             }
             // if we're calling this method, this will never return null since the
             // method returns a struct.
+            // The standard implementation should put the metadata into the cache.
             result = (TypeMetadata)method.Invoke(null, Array.Empty<object>())!;
             return true;
         }
+
+        // NB - all further methods here should finish by putting the type into the cache
 
         // TODO: handle tuples https://github.com/dotnet/runtimelab/issues/2873
 
