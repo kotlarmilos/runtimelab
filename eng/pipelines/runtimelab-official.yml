@@ -48,10 +48,8 @@ extends:
             image: macos-latest
             os: macOS
           bindings:
-            target: MacOSX
-            arch: arm64e-apple-macos
-            frameworks: ["StoreKit", "SwiftUI"]
-            IsMetadataOnlyBuild: true
+            isBindingsBuild: true
+            scriptArgs: 'MacOSX arm64e-apple-macos --metadata-only StoreKit SwiftUI'
 
     - ${{ if eq(variables.isOfficialBuild, true) }}:
       - template: /eng/pipelines/common/templates/publish.yml

@@ -7,10 +7,8 @@ parameters:
   isOfficialBuild: false
   runTests: true
   bindings:
-      target: ''
-      arch: ''
-      IsMetadataOnlyBuild: false
-      frameworks: []
+    isBindingsBuild: false
+    scriptArgs: ''
 
 jobs:
 
@@ -56,8 +54,9 @@ jobs:
                 /p:TargetPlatform=${{ parameters.archType }}
         displayName: Build and Test
 
-      - script: ./generate.sh ${{ parameters.bindings.target }} ${{ parameters.bindings.arch }} ${{ parameters.bindings.IsMetadataOnlyBuild }} ${{ join(parameters.bindings.frameworks, ' ') }}
-        displayName: Generate Bindings
+      - ${{ if and(eq(parameters.bindings.isBindingsBuild, true), ne(parameters.osGroup, 'Windows_NT')) }}:
+        - script: ./generate.sh ${{ parameters.bindings.scriptArgs }}
+          displayName: Generate Bindings
 
       - ${{ if eq(parameters.isOfficialBuild, true) }}:
         - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
