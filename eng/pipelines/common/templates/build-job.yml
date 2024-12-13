@@ -56,7 +56,6 @@ jobs:
                 /p:TargetPlatform=${{ parameters.archType }}
         displayName: Build and Test
 
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - script: ./generate.sh ${{ parameters.bindings.target }} ${{ parameters.bindings.arch }} ${{ parameters.bindings.IsMetadataOnlyBuild }} ${{ join(parameters.bindings.frameworks, ' ') }}
         displayName: Generate Bindings
 
