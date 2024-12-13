@@ -1,40 +1,80 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-if [ "$#" -lt 4 ]; then
-    echo "Usage: $0 <platform> <architecture> <framework1> [<framework2> ...]"
-    exit 1
-fi
+usage()
+{
+  echo "Common settings:"
+  echo "  --platform <value>         Platform: MacOSX, iPhoneOS, iPhoneSimulator, AppleTVOS, AppleTVSimulator"
+  echo "  --arch <value>             Architecture: arm64e-apple-macos, x86_64-apple-macos"
+  echo "  --framework                Framework to generate bindings for"
+  echo "  --help                     Print help and exit (short: -h)"
+  echo ""
 
-# Parse arguments
-PLATFORM=$1
-ARCHITECTURE=$2
+  echo "Actions:"
+  echo "  --experimental             Generates only Runtime.Swift namespace when bindings for frameworks are not complete"
+}
 
-shift 2
-# Remove framework bindings if --metadata-only flag is passed
-REMOVE_BINDINGS=false
-FRAMEWORKS=()
+source="${BASH_SOURCE[0]}"
 
-for arg in "$@"; do
-    if [ "$arg" == "--metadata-only" ]; then
-        REMOVE_BINDINGS=true
-    else
-        FRAMEWORKS+=("$arg")
-    fi
+# resolve $SOURCE until the file is no longer a symlink
+while [[ -h $source ]]; do
+  scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
+  source="$(readlink "$source")"
+
+  # if $source was a relative symlink, we need to resolve it relative to the path where the
+  # symlink file was located
+  [[ $source != /* ]] && source="$scriptroot/$source"
+done
+
+scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
+
+platform=''
+arch=''
+frameworks=()
+experimental=false
+
+output_dir="./GeneratedBindings"
+
+while [[ $# > 0 ]]; do
+  opt="$(echo "${1/#--/-}" | tr "[:upper:]" "[:lower:]")"
+  case "$opt" in
+    -help|-h)
+      usage
+      exit 0
+      ;;
+    -experimental)
+      experimental=true
+      ;;
+    -platform)
+      platform=$2
+      shift
+      ;;
+    -arch)
+      arch=$2
+      shift
+      ;;
+    -framework)
+      frameworks+=("$2")
+      shift
+      ;;
+  esac
+
+  shift
 done
 
 # Output directory for generated bindings
-OUTPUT_DIR="./GeneratedBindings"
-rm -rf "$OUTPUT_DIR"
-mkdir -p "$OUTPUT_DIR"
+rm -rf "$output_dir"
+mkdir -p "$output_dir"
 
-cd $OUTPUT_DIR
+cd "$output_dir"
 
 # Function to extract ABI file
-extract_abi_json() {
+function ExtractABI {
     local framework=$1
 
-    local sdk_path=$(xcrun -sdk $(echo "$PLATFORM" | tr '[:upper:]' '[:lower:]') --show-sdk-path)
-    local swift_interface_path="/Applications/Xcode.app/Contents/Developer/Platforms/${PLATFORM}.platform/Developer/SDKs/${PLATFORM}.sdk/System/Library/Frameworks/${framework}.framework/Versions/Current/Modules/${framework}.swiftmodule/${ARCHITECTURE}.swiftinterface"
+    echo "Generating ABI for framework '$framework', platform '$platform', architecture '$arch'"
+    
+    local sdk_path=$(xcrun -sdk $(echo "$platform" | tr '[:upper:]' '[:lower:]') --show-sdk-path)
+    local swift_interface_path="/Applications/Xcode.app/Contents/Developer/Platforms/${platform}.platform/Developer/SDKs/${platform}.sdk/System/Library/Frameworks/${framework}.framework/Versions/Current/Modules/${framework}.swiftmodule/${arch}.swiftinterface"
 
     if [ ! -f "$swift_interface_path" ]; then
         echo "Error: Swift interface file not found for framework '$framework'."
@@ -48,19 +88,19 @@ extract_abi_json() {
 }
 
 # Function to generate bindings
-generate_dotnet_bindings() {
+function InvokeProjectionTooling {
     local framework=$1
 
-    ../.dotnet/dotnet ../artifacts/bin/Swift.Bindings/Release/net9.0/Swift.Bindings.dll -a "$framework" -o "$OUTPUT_DIR"
+    $scriptroot/.dotnet/dotnet $scriptroot/artifacts/bin/Swift.Bindings/Release/net9.0/Swift.Bindings.dll -a "$framework" -o "./"
 
-    if $REMOVE_BINDINGS; then
+    if $experimental; then
         rm -rf "./Swift.$framework.cs"
     fi
 }
 
 # Function to generate NuGet package
-generate_nuget_package() {
-    local project_file="./Swift.Bindings.${PLATFORM}.Experimental.csproj"
+function PackNuGet {
+    local project_file="./Swift.Bindings.${platform}.Experimental.csproj"
 
     cat <<EOL > "$project_file"
 <Project Sdk="Microsoft.NET.Sdk">
@@ -74,20 +114,23 @@ generate_nuget_package() {
 </Project>
 EOL
 
-    ../.dotnet/dotnet pack "$project_file"
+    $scriptroot/.dotnet/dotnet pack "$project_file"
 }
 
-# Process each framework
-for framework in "${FRAMEWORKS[@]}"; do
-    echo "Processing framework: $framework"
+function Generate {
+    for framework in "${frameworks[@]}"; do
+        echo "Processing framework: $framework"
 
-    if extract_abi_json "$framework"; then
-        generate_dotnet_bindings "$framework"
-    else
-        echo "Skipping framework '$framework' due to errors."
-    fi
-done
+        if ExtractABI "$framework"; then
+            InvokeProjectionTooling "$framework"
+        else
+            echo "Skipping framework '$framework' due to errors."
+        fi
+    done
 
-generate_nuget_package
+    PackNuGet
 
-echo "Process completed."
+    echo "Process completed."
+}
+
+Generate
