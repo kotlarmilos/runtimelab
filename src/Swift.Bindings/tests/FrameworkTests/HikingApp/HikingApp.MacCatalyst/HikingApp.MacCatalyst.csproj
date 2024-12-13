@@ -27,7 +27,7 @@
     </ImageAsset>
   </ItemGroup>
 
-  <!-- Reference Swift.Bindings.MacOSX.Experimental from dotnet-experimental feed -->
+  <!-- Reference Swift.Bindings.MacOSX.Experimental NuGet package locally -->
   <!-- <ItemGroup>
     <PackageReference Include="Swift.Bindings.MacOSX.Experimental" />
   </ItemGroup> -->
