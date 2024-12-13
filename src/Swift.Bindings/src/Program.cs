@@ -182,11 +182,18 @@ namespace BindingsGeneration
             }
 
             // Copy the Swift.Runtime library to the output directory
-            var libraryDirectory = Path.Combine(Directory.GetParent(outputDirectory)!.FullName, "Library");
-            Directory.CreateDirectory(libraryDirectory);
-            var dirInfo = new DirectoryInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Library"));
-                foreach (var fileInfo in dirInfo.GetFiles())
-                    fileInfo.CopyTo(Path.Combine(libraryDirectory, fileInfo.Name), true);
+            string[] sourceDirectories = { "Metadata", "ManualBindings" };
+            foreach (var sourceDir in sourceDirectories)
+            {
+                var destinationDirectory = Path.Combine(Directory.GetParent(outputDirectory)!.FullName, sourceDir);
+                Directory.CreateDirectory(destinationDirectory);
+
+                var sourceDirInfo = new DirectoryInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, sourceDir));
+                foreach (var fileInfo in sourceDirInfo.GetFiles())
+                {
+                    fileInfo.CopyTo(Path.Combine(destinationDirectory, fileInfo.Name), true);
+                }
+            }
         }
 
         /// <summary>

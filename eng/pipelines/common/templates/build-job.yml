@@ -6,6 +6,11 @@ parameters:
   pool: {}
   isOfficialBuild: false
   runTests: true
+  bindings:
+      target: ''
+      arch: ''
+      IsMetadataOnlyBuild: false
+      frameworks: []
 
 jobs:
 
@@ -50,6 +55,10 @@ jobs:
                 $(_testBuildArg)
                 /p:TargetPlatform=${{ parameters.archType }}
         displayName: Build and Test
+
+      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        - script: ./generate.sh ${{ parameters.bindings.target }} ${{ parameters.bindings.arch }} ${{ parameters.bindings.IsMetadataOnlyBuild }} ${{ parameters.bindings.frameworks }}
+        displayName: Generate Bindings
 
       - ${{ if eq(parameters.isOfficialBuild, true) }}:
         - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml

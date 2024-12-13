@@ -47,6 +47,11 @@ extends:
             name: Azure Pipelines
             image: macos-latest
             os: macOS
+          bindings:
+            target: MacOSX
+            arch: arm64e-apple-macos
+            frameworks: ["StoreKit", "SwiftUI"]
+            IsMetadataOnlyBuild: true
 
     - ${{ if eq(variables.isOfficialBuild, true) }}:
       - template: /eng/pipelines/common/templates/publish.yml

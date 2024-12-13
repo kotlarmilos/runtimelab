@@ -21,7 +21,7 @@
 
     <!-- Compile generated bindings with tests -->
     <ItemGroup>
-      <Compile Include="$(OutputPath)/**/*.cs" Exclude="$(OutputPath)/Library/*.cs;$(OutputPath)/Metadata/*.cs" />
+      <Compile Include="$(OutputPath)/**/*.cs" Exclude="$(OutputPath)/Metadata/*.cs;$(OutputPath)/ManualBindings/*.cs" />
     </ItemGroup>
   </Target>
 </Project>
