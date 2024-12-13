@@ -258,16 +258,15 @@ public readonly struct TypeMetadata : IEquatable<TypeMetadata> {
     /// Attempt to get the Swift type metadata for the given object instance
     /// </summary>
     /// <typeparam name="T">The type of the object</typeparam>
-    /// <param name="obj">An object to look up</param>
     /// <param name="result">The result of looked up type metadata</param>
     /// <returns>true on success false otherwise</returns>
-    public static bool TryGetTypeMetadata<T>(T obj, [NotNullWhen(true)] out TypeMetadata? result)
+    public static bool TryGetTypeMetadata<T>([NotNullWhen(true)] out TypeMetadata? result)
     {
         return TryGetTypeMetadata(typeof(T), out result);
     }
 
     /// <summary>
-    /// Attemp to get the Swift type metadata for the given type
+    /// Attempt to get the Swift type metadata for the given type
     /// </summary>
     /// <param name="type">A type to look up</param>
     /// <param name="result">The result of looked up type metadata</param>

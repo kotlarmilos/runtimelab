@@ -100,14 +100,12 @@ public class TypeMetadataTests : IClassFixture<TypeMetadataTests.TestFixture>
     [Fact]
     public static void CanTryGetOnInstance()
     {
-        var thisOnly = new ThisOnlyGetsUsedHere();
-        Assert.True(TypeMetadata.TryGetTypeMetadata(thisOnly, out var md));
+        Assert.True(TypeMetadata.TryGetTypeMetadata<ThisOnlyGetsUsedHere>(out var md));
     }
 
     [Fact]
     public static void CannotGetOnUnknownInstance()
     {
-        var o = new object();
-        Assert.False(TypeMetadata.TryGetTypeMetadata(o, out var md));
+        Assert.False(TypeMetadata.TryGetTypeMetadata<object>(out var md));
     }
 }

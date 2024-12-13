@@ -12,5 +12,5 @@ public interface ISwiftObject
     /// Returns the TypeMetadata for this object
     /// </summary>
     /// <returns>A type metadata object for the type.</returns>
-    static abstract TypeMetadata GetTypeMetadata();
+    public static abstract TypeMetadata GetTypeMetadata();
 }
