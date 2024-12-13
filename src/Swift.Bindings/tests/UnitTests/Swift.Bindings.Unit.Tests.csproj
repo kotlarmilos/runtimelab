@@ -5,7 +5,8 @@
     <Nullable>disable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-    <PreTestCommand>cd $(OutputPath)$(TargetFramework) &amp;&amp; cmake $(MSBuildThisFileDirectory) &amp;&amp; make</PreTestCommand>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
 
   <ItemGroup>
