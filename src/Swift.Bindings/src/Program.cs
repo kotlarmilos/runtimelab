@@ -186,7 +186,7 @@ namespace BindingsGeneration
             Directory.CreateDirectory(libraryDirectory);
             var dirInfo = new DirectoryInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Library"));
                 foreach (var fileInfo in dirInfo.GetFiles())
-                    fileInfo.CopyTo(Path.Combine(libraryDirectory, fileInfo.Name));
+                    fileInfo.CopyTo(Path.Combine(libraryDirectory, fileInfo.Name), true);
         }
 
         /// <summary>

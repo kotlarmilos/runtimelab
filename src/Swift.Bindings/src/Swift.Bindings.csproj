@@ -7,7 +7,9 @@
     <Nullable>enable</Nullable>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ToolCommandName>swiftbindings</ToolCommandName>
     <PackAsTool>true</PackAsTool>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../Swift.Runtime/src/Swift.Runtime.csproj">
