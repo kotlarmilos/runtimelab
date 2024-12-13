@@ -1,7 +1,5 @@
 #!/bin/bash
 
-./build.sh
-
 if [ "$#" -lt 4 ]; then
     echo "Usage: $0 <platform> <architecture> <framework1> [<framework2> ...]"
     exit 1
@@ -53,7 +51,7 @@ extract_abi_json() {
 generate_dotnet_bindings() {
     local framework=$1
 
-    dotnet ../artifacts/bin/Swift.Bindings/Release/net9.0/Swift.Bindings.dll -a "$framework" -o "$OUTPUT_DIR"
+    ../.dotnet/dotnet ../artifacts/bin/Swift.Bindings/Release/net9.0/Swift.Bindings.dll -a "$framework" -o "$OUTPUT_DIR"
 
     if $REMOVE_BINDINGS; then
         rm -rf "./Swift.$framework.cs"
@@ -76,7 +74,7 @@ generate_nuget_package() {
 </Project>
 EOL
 
-    dotnet pack "$project_file"
+    ../.dotnet/dotnet pack "$project_file"
 }
 
 # Process each framework
