@@ -1,5 +1,21 @@
 #!/bin/bash
 
+source="${BASH_SOURCE[0]}"
+
+# resolve $SOURCE until the file is no longer a symlink
+while [[ -h $source ]]; do
+  scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
+  source="$(readlink "$source")"
+
+  # if $source was a relative symlink, we need to resolve it relative to the path where the
+  # symlink file was located
+  [[ $source != /* ]] && source="$scriptroot/$source"
+done
+
+scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
+
+source ./eng/common/tools.sh
+
 if [ "$#" -lt 4 ]; then
     echo "Usage: $0 <platform> <architecture> <framework1> [<framework2> ...]"
     exit 1
@@ -76,6 +92,8 @@ EOL
 
     dotnet pack "$project_file"
 }
+
+InitializeToolset
 
 # Process each framework
 for framework in "${FRAMEWORKS[@]}"; do
