@@ -50,7 +50,7 @@ namespace Swift.Runtime
                 }
 
                 // Convert the IntPtr to a delegate
-                MyFunctionDelegate func = (MyFunctionDelegate)Marshal.GetDelegateForFunctionPointer(funcPtr, typeof(MyFunctionDelegate));
+                MyFunctionDelegate func = Marshal.GetDelegateForFunctionPointer<MyFunctionDelegate>(funcPtr);
                 IntPtr result = func();
                 return result;
             }

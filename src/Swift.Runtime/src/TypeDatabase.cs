@@ -122,19 +122,6 @@ namespace Swift.Runtime
             if (typeRecord != null)
                 return typeRecord;
 
-            // Try to find a type within Swift.Runtime namespace
-            var swiftRuntimeType = Type.GetType($"Swift.Runtime.{typeIdentifier}");
-            if (swiftRuntimeType != null)
-            {
-                // Add the type to the database
-                typeRecord = Registrar.RegisterType(moduleName, typeIdentifier);
-                typeRecord.Namespace = "Swift.Runtime";
-                typeRecord.TypeIdentifier = swiftRuntimeType.Name;
-                typeRecord.IsProcessed = true;
-
-                return typeRecord;
-            }
-
             // Type not found; register it for lazy-loading
             typeRecord = Registrar.RegisterType(moduleName, typeIdentifier);
             typeRecord.IsProcessed = false;
