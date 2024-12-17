@@ -7,13 +7,20 @@
     <Nullable>enable</Nullable>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsAotCompatible>true</IsAotCompatible>
+    <ToolCommandName>swiftbindings</ToolCommandName>
+    <PackAsTool>true</PackAsTool>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../Swift.Runtime/src/Swift.Runtime.csproj" />
+    <ProjectReference Include="../../Swift.Runtime/src/Swift.Runtime.csproj">
+      <ReferenceSourceTarget></ReferenceSourceTarget>
+    </ProjectReference>
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.0.0" />
-    <None Include="../../../README.md" Pack="true" PackagePath="\"/>
+    <None Include="../../../README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

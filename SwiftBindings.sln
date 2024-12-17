@@ -3,13 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwiftBindings", "src\Swift.Bindings\src\Swift.Bindings.csproj", "{B7977360-6671-4707-9A1C-1C29D5BE2674}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Swift.Bindings", "src\Swift.Bindings\src\Swift.Bindings.csproj", "{B7977360-6671-4707-9A1C-1C29D5BE2674}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwiftBindings.Tests", "src\Swift.Bindings\tests\Swift.Bindings.Tests.csproj", "{CE81B6BD-CCCC-4223-9069-B28435A4A5C1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Swift.Bindings.Unit.Tests", "src\Swift.Bindings\tests\UnitTests\Swift.Bindings.Unit.Tests.csproj", "{CE81B6BD-CCCC-4223-9069-B28435A4A5C1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwiftRuntime", "src\Swift.Runtime\src\Swift.Runtime.csproj", "{8E9013BE-01BD-4F4C-8BF7-E8C71FA6608E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Swift.Runtime", "src\Swift.Runtime\src\Swift.Runtime.csproj", "{8E9013BE-01BD-4F4C-8BF7-E8C71FA6608E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwiftRuntime.Tests", "src\Swift.Runtime\tests\Swift.Runtime.Tests.csproj", "{61F74BC6-1CCA-49FA-B5B8-6C9EABC1D0AB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Swift.Runtime.Tests", "src\Swift.Runtime\tests\Swift.Runtime.Tests.csproj", "{61F74BC6-1CCA-49FA-B5B8-6C9EABC1D0AB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Swift.Bindings.Integration.Tests", "src\Swift.Bindings\tests\IntegrationTests\Swift.Bindings.Integration.Tests.csproj", "{CF9035B8-57F0-49A2-B985-94B1F6389339}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Swift.Bindings.Framework.Tests", "src\Swift.Bindings\tests\FrameworkTests\Swift.Bindings.Framework.Tests.csproj", "{BCC05AA9-F43C-478F-B417-D7E4EFD29362}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -72,5 +76,29 @@ Global
 		{61F74BC6-1CCA-49FA-B5B8-6C9EABC1D0AB}.Release|x64.Build.0 = Release|Any CPU
 		{61F74BC6-1CCA-49FA-B5B8-6C9EABC1D0AB}.Release|x86.ActiveCfg = Release|Any CPU
 		{61F74BC6-1CCA-49FA-B5B8-6C9EABC1D0AB}.Release|x86.Build.0 = Release|Any CPU
+		{CF9035B8-57F0-49A2-B985-94B1F6389339}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF9035B8-57F0-49A2-B985-94B1F6389339}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF9035B8-57F0-49A2-B985-94B1F6389339}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{CF9035B8-57F0-49A2-B985-94B1F6389339}.Debug|x64.Build.0 = Debug|Any CPU
+		{CF9035B8-57F0-49A2-B985-94B1F6389339}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{CF9035B8-57F0-49A2-B985-94B1F6389339}.Debug|x86.Build.0 = Debug|Any CPU
+		{CF9035B8-57F0-49A2-B985-94B1F6389339}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF9035B8-57F0-49A2-B985-94B1F6389339}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CF9035B8-57F0-49A2-B985-94B1F6389339}.Release|x64.ActiveCfg = Release|Any CPU
+		{CF9035B8-57F0-49A2-B985-94B1F6389339}.Release|x64.Build.0 = Release|Any CPU
+		{CF9035B8-57F0-49A2-B985-94B1F6389339}.Release|x86.ActiveCfg = Release|Any CPU
+		{CF9035B8-57F0-49A2-B985-94B1F6389339}.Release|x86.Build.0 = Release|Any CPU
+		{BCC05AA9-F43C-478F-B417-D7E4EFD29362}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BCC05AA9-F43C-478F-B417-D7E4EFD29362}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BCC05AA9-F43C-478F-B417-D7E4EFD29362}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BCC05AA9-F43C-478F-B417-D7E4EFD29362}.Debug|x64.Build.0 = Debug|Any CPU
+		{BCC05AA9-F43C-478F-B417-D7E4EFD29362}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BCC05AA9-F43C-478F-B417-D7E4EFD29362}.Debug|x86.Build.0 = Debug|Any CPU
+		{BCC05AA9-F43C-478F-B417-D7E4EFD29362}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BCC05AA9-F43C-478F-B417-D7E4EFD29362}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BCC05AA9-F43C-478F-B417-D7E4EFD29362}.Release|x64.ActiveCfg = Release|Any CPU
+		{BCC05AA9-F43C-478F-B417-D7E4EFD29362}.Release|x64.Build.0 = Release|Any CPU
+		{BCC05AA9-F43C-478F-B417-D7E4EFD29362}.Release|x86.ActiveCfg = Release|Any CPU
+		{BCC05AA9-F43C-478F-B417-D7E4EFD29362}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

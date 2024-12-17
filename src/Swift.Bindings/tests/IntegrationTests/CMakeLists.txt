@@ -1,9 +1,8 @@
 cmake_minimum_required(VERSION 3.24)
 
-project(SwiftTests)
+project(FunctionalTests)
 
-# Find all Swift source files in the directory
-file(GLOB SOURCES "**/*.swift")
+file(GLOB_RECURSE SOURCES "${CMAKE_SOURCE_DIR}/**/*.swift")
 
 if (NOT SWIFT_COMPILER_TARGET)
     set(SWIFT_PLATFORM "macosx")
@@ -24,16 +23,23 @@ foreach(SOURCE_FILE ${SOURCES})
     set(OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/${PARENT_DIR_NAME}")
     message(STATUS "Generating ${OUTPUT_DIR} library")
     file(MAKE_DIRECTORY ${OUTPUT_DIR})
+
     add_custom_target(${SOURCE_BASE_NAME} ALL
         COMMAND xcrun swiftc -target ${SWIFT_COMPILER_TARGET} -emit-module -emit-library -enable-library-evolution -emit-module-interface ${SOURCE_FILE} -o ${OUTPUT_DIR}/lib${SOURCE_BASE_NAME}.dylib
         DEPENDS ${SOURCE_FILE}
         COMMENT "Generating ${SOURCE_BASE_NAME} library"
     )
+
     install(FILES ${OUTPUT_DIR}/lib${SOURCE_BASE_NAME}.dylib
         DESTINATION bin
     )
+
+    get_filename_component(DOTNET_VERSION ${CMAKE_BINARY_DIR} NAME)
+    get_filename_component(DOTNET_CONFIGURATION ${CMAKE_BINARY_DIR} DIRECTORY)
+    get_filename_component(DOTNET_CONFIGURATION ${DOTNET_CONFIGURATION} NAME)
+
     add_custom_command(TARGET ${SOURCE_BASE_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy ${OUTPUT_DIR}/lib${SOURCE_BASE_NAME}.dylib ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Copying ${SOURCE_BASE_NAME} library to binary directory"
+        COMMAND dotnet ${CMAKE_BINARY_DIR}/../../../Swift.Bindings/${DOTNET_CONFIGURATION}/${DOTNET_VERSION}/Swift.Bindings.dll -a ${OUTPUT_DIR}/${SOURCE_BASE_NAME}.abi.json -o ${OUTPUT_DIR}
+        COMMENT "Generating ${SOURCE_BASE_NAME} bindings"
     )
 endforeach()
