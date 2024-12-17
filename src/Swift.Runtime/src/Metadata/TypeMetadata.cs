@@ -262,57 +262,46 @@ public readonly struct TypeMetadata : IEquatable<TypeMetadata> {
     /// <returns>true on success false otherwise</returns>
     public static bool TryGetTypeMetadata<T>([NotNullWhen(true)] out TypeMetadata? result)
     {
-        return TryGetTypeMetadata(typeof(T), out result);
-    }
-
-    /// <summary>
-    /// Attempt to get the Swift type metadata for the given type
-    /// </summary>
-    /// <param name="type">A type to look up</param>
-    /// <param name="result">The result of looked up type metadata</param>
-    /// <returns>true on success false otherwise</returns>
-    public static bool TryGetTypeMetadata(Type type, [NotNullWhen(true)] out TypeMetadata? result)
-    {
-        if (cache.TryGet(type, out result))
+        if (cache.TryGet(typeof(T), out result))
             return true;
-
-        return TryGetTypeMetadataUncached(type, out result);
+        return TryGetTypeMetadataUncached<T>(out result);
     }
 
     /// <summary>
     /// Attempt to get the Swift type metadata for the given type
     /// </summary>
-    /// <param name="type">A type to look up</param>
+    /// <typeparam name="T">The type of the object</typeparam>
     /// <returns>The result of the looked up type metadata on success</returns>
     /// <exception cref="Exception">Throws when lookup fails</exception>
-    public static TypeMetadata GetTypeMetadataOrThrow(Type type)
+    public static TypeMetadata GetTypeMetadataOrThrow<T>()
     {
-        if (TryGetTypeMetadata(type, out var result))
+        if (TryGetTypeMetadata<T>(out var result))
             return result.Value;
-        throw new Exception(string.Format("Unable to get type metadata for type {0}", type.Name));
+        throw new Exception(string.Format("Unable to get type metadata for type {0}", typeof(T).Name));
+    }
+
+    struct MetadataHelper<T> where T: ISwiftObject
+    {
+        public static TypeMetadata GetTypeMetadata()
+        {
+            return T.GetTypeMetadata();
+        }
     }
 
     /// <summary>
     /// Attempt to get the Swift type metadata but without accessing the cache
     /// </summary>
-    /// <param name="type">A type to look up</param>
+    /// <typeparam name="T">The type of the object</typeparam>
     /// <param name="result">The result of looked up type metadata</param>
     /// <returns>true on success false otherwise</returns>
     /// <exception cref="NotImplementedException">Throws if unable to look up the ISwiftObject.GetTypeMetadata method.</exception>
-    static bool TryGetTypeMetadataUncached(Type type, [NotNullWhen(true)] out TypeMetadata? result)
+    static bool TryGetTypeMetadataUncached<T>([NotNullWhen(true)] out TypeMetadata? result)
     {
+        var type = typeof(T);
         if (typeof(ISwiftObject).IsAssignableFrom(type))
         {
-            var method = type.GetMethod("Swift.Runtime.ISwiftObject.GetTypeMetadata", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-            if (method is null)
-            {
-                throw new NotImplementedException(string.Format("Type {0} implements {1}, but not explicitly.",
-                    type.Name, nameof(ISwiftObject)));
-            }
-            // if we're calling this method, this will never return null since the
-            // method returns a struct.
-            // The standard implementation should put the metadata into the cache.
-            result = (TypeMetadata)method.Invoke(null, Array.Empty<object>())!;
+            var helper = typeof(MetadataHelper<>).MakeGenericType(type);
+            result = (TypeMetadata)helper.GetMethod("GetTypeMetadata")!.Invoke(null, null)!;
             return true;
         }
 

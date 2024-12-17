@@ -27,23 +27,21 @@ public class KnownMetadataTests : IClassFixture<KnownMetadataTests.TestFixture>
         }
     }
 
-    [Theory]
-    [InlineData(typeof(bool))]
-    [InlineData(typeof(sbyte))]
-    [InlineData(typeof(byte))]
-    [InlineData(typeof(short))]
-    [InlineData(typeof(ushort))]
-    [InlineData(typeof(int))]
-    [InlineData(typeof(uint))]
-    [InlineData(typeof(long))]
-    [InlineData(typeof(ulong))]
-    [InlineData(typeof(nint))]
-    [InlineData(typeof(nuint))]
-    [InlineData(typeof(float))]
-    [InlineData(typeof(double))]
-    [InlineData(typeof(void))]
-    public static void HasBool(Type type)
+    [Fact]
+    public static void HasPrimatives()
     {
-        Assert.True(TypeMetadata.TryGetTypeMetadata(type, out var md));
+        Assert.True(TypeMetadata.TryGetTypeMetadata<bool>(out var md0));
+        Assert.True(TypeMetadata.TryGetTypeMetadata<sbyte>(out var md1));
+        Assert.True(TypeMetadata.TryGetTypeMetadata<byte>(out var md2));
+        Assert.True(TypeMetadata.TryGetTypeMetadata<short>(out var md3));
+        Assert.True(TypeMetadata.TryGetTypeMetadata<ushort>(out var md4));
+        Assert.True(TypeMetadata.TryGetTypeMetadata<int>(out var md5));
+        Assert.True(TypeMetadata.TryGetTypeMetadata<uint>(out var md6));
+        Assert.True(TypeMetadata.TryGetTypeMetadata<long>(out var md7));
+        Assert.True(TypeMetadata.TryGetTypeMetadata<ulong>(out var md8));
+        Assert.True(TypeMetadata.TryGetTypeMetadata<nint>(out var md9));
+        Assert.True(TypeMetadata.TryGetTypeMetadata<nuint>(out var md10));
+        Assert.True(TypeMetadata.TryGetTypeMetadata<float>(out var md11));
+        Assert.True(TypeMetadata.TryGetTypeMetadata<double>(out var md12));
     }
 }

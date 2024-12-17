@@ -70,7 +70,7 @@ public class TypeMetadataTests : IClassFixture<TypeMetadataTests.TestFixture>
     public struct ThisOnlyGetsUsedHere : ISwiftObject {
         static TypeMetadata ISwiftObject.GetTypeMetadata()
         {
-            if (TypeMetadata.TryGetTypeMetadata (typeof(int), out var fakeMd)) {
+            if (TypeMetadata.TryGetTypeMetadata<int>(out var fakeMd)) {
                 return TypeMetadata.Cache.GetOrAdd(typeof(ThisOnlyGetsUsedHere), (type) => fakeMd.Value);
             }
             return TypeMetadata.Zero;
@@ -80,20 +80,20 @@ public class TypeMetadataTests : IClassFixture<TypeMetadataTests.TestFixture>
     [Fact]
     public static void CanTryGetMetadata()
     {
-        Assert.True(TypeMetadata.TryGetTypeMetadata(typeof(ThisOnlyGetsUsedHere), out var md));
+        Assert.True(TypeMetadata.TryGetTypeMetadata<ThisOnlyGetsUsedHere>(out var md));
     }
 
     [Fact]
     public static void CannotTryGetMetadata()
     {
-        Assert.False(TypeMetadata.TryGetTypeMetadata(typeof(TypeMetadataTests), out var md));
+        Assert.False(TypeMetadata.TryGetTypeMetadata<TypeMetadataTests>(out var md));
     }
 
     [Fact]
     public static void TryGetWillThrow()
     {
         Assert.Throws<Exception>(() => {
-            TypeMetadata.GetTypeMetadataOrThrow(typeof(TypeMetadataTests));
+            TypeMetadata.GetTypeMetadataOrThrow<TypeMetadataTests>();
         });
     }
 
