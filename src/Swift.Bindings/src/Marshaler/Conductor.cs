@@ -17,10 +17,17 @@ namespace BindingsGeneration
     /// It initializes the handler factories and provides methods to fetch handlers for given declarations.
     /// </summary>
     public class Conductor {
-        private readonly List<IModuleHandlerFactory> _moduleHandlerFactories = [];
-        private readonly List<ITypeHandlerFactory> _typeHandlerFactories = [];
+        private readonly List<IModuleHandlerFactory> _moduleHandlerFactories = [
+            new ModuleHandlerFactory()
+        ];
+        private readonly List<ITypeHandlerFactory> _typeHandlerFactories = [
+            new StructHandlerFactory(),
+            new ClassHandlerFactory(),
+        ];
         private readonly List<IFieldHandlerFactory> _fieldHandlerFactories = [];
-        private readonly List<IMethodHandlerFactory> _methodHandlerFactories = [];
+        private readonly List<IMethodHandlerFactory> _methodHandlerFactories = [
+            new MethodHandlerFactory()
+        ];
         private readonly List<IArgumentHandlerFactory> _argumentHandlerFactories = [];
         
         /// <summary>
@@ -28,11 +35,6 @@ namespace BindingsGeneration
         /// </summary>
         public Conductor()
         {
-            LoadModuleHandlers(_moduleHandlerFactories);
-            LoadTypeHandlers(_typeHandlerFactories);
-            LoadFieldHandlers(_fieldHandlerFactories);
-            LoadMethodHandlers(_methodHandlerFactories);
-            LoadArgumentHandlers(_argumentHandlerFactories);
         }
 
 
@@ -94,124 +96,6 @@ namespace BindingsGeneration
             var factory = factories.FirstOrDefault(f => f.Handles(decl));
             handler = factory?.Construct();
             return handler is not null;
-        }
-
-        /// <summary>
-        /// Loads module handler factories from the assembly.
-        /// </summary>
-        /// <param name="factories">The list to add the loaded factories to.</param>
-        private static void LoadModuleHandlers(List<IModuleHandlerFactory> factories)
-        {
-            factories.AddRange(TypesImplementing(typeof(IModuleHandlerFactory)).Select(ToModuleHandlerFactory));
-        }
-
-        /// <summary>
-        /// Converts a type to an IModuleHandlerFactory instance.
-        /// </summary>
-        /// <param name="type">The type to convert.</param>
-        /// <returns>The IModuleHandlerFactory instance.</returns>
-        private static IModuleHandlerFactory ToModuleHandlerFactory(Type type)
-        {
-            return CallDefaultCtor<IModuleHandlerFactory>(type);
-        }
-
-        /// <summary>
-        /// Loads type handler factories from the assembly.
-        /// </summary>
-        /// <param name="factories">The list to add the loaded factories to.</param>
-        private static void LoadTypeHandlers(List<ITypeHandlerFactory> factories)
-        {
-            factories.AddRange(TypesImplementing(typeof(ITypeHandlerFactory)).Select(ToTypeHandlerFactory));
-        }
-
-        /// <summary>
-        /// Converts a type to an ITypeHandlerFactory instance.
-        /// </summary>
-        /// <param name="type">The type to convert.</param>
-        /// <returns>The ITypeHandlerFactory instance.</returns>
-        private static ITypeHandlerFactory ToTypeHandlerFactory(Type type)
-        {
-            return CallDefaultCtor<ITypeHandlerFactory>(type);
-        }
-
-        /// <summary>
-        /// Loads field handler factories from the assembly.
-        /// </summary>
-        /// <param name="factories">The list to add the loaded factories to.</param>
-        private static void LoadFieldHandlers(List<IFieldHandlerFactory> factories)
-        {
-            factories.AddRange(TypesImplementing(typeof(IFieldHandlerFactory)).Select(ToFieldHandlerFactory));
-        }
-
-        /// <summary>
-        /// Converts a type to an IFieldHandlerFactory instance.
-        /// </summary>
-        /// <param name="type">The type to convert.</param>
-        /// <returns>The IFieldHandlerFactory instance.</returns>
-        private static IFieldHandlerFactory ToFieldHandlerFactory(Type type)
-        {
-            return CallDefaultCtor<IFieldHandlerFactory>(type);
-        }
-
-        /// <summary>
-        /// Loads method handler factories from the assembly.
-        /// </summary>
-        /// <param name="factories">The list to add the loaded factories to.</param>
-        private static void LoadMethodHandlers(List<IMethodHandlerFactory> factories)
-        {
-            factories.AddRange(TypesImplementing(typeof(IMethodHandlerFactory)).Select(ToMethodHandlerFactory));
-        }
-
-        /// <summary>
-        /// Converts a type to an IMethodHandlerFactory instance.
-        /// </summary>
-        /// <param name="type">The type to convert.</param>
-        /// <returns>The IMethodHandlerFactory instance.</returns>
-        private static IMethodHandlerFactory ToMethodHandlerFactory(Type type)
-        {
-            return CallDefaultCtor<IMethodHandlerFactory>(type);
-        }
-
-        /// <summary>
-        /// Loads argument handler factories from the assembly.
-        /// </summary>
-        /// <param name="factories">The list to add the loaded factories to.</param>
-        private static void LoadArgumentHandlers(List<IArgumentHandlerFactory> factories)
-        {
-            factories.AddRange(TypesImplementing(typeof(IArgumentHandlerFactory)).Select(ToArgumentHandlerFactory));
-        }
-
-        /// <summary>
-        /// Converts a type to an IArgumentHandlerFactory instance.
-        /// </summary>
-        /// <param name="type">The type to convert.</param>
-        /// <returns>The IArgumentHandlerFactory instance.</returns>
-        private static IArgumentHandlerFactory ToArgumentHandlerFactory(Type type)
-        {
-            return CallDefaultCtor<IArgumentHandlerFactory>(type);
-        }
-
-        /// <summary>
-        /// Calls the default constructor of a given type.
-        /// </summary>
-        /// <typeparam name="T">The type to instantiate.</typeparam>
-        /// <param name="type">The type to instantiate.</param>
-        /// <returns>The instantiated object.</returns>
-        private static T CallDefaultCtor<T>(Type type) where T : class
-        {
-            var ctor = type.GetConstructor(Type.EmptyTypes) ?? throw new Exception($"{type.Name} does not contain a default constructor");
-            return (ctor.Invoke(null) as T)!;
-        }
-        
-        /// <summary>
-        /// Finds all types in the assembly that implement a given target type.
-        /// </summary>
-        /// <param name="targetType">The target type to search for.</param>
-        /// <returns>An enumerable of types that implement the target type.</returns>
-        private static IEnumerable<Type> TypesImplementing(Type targetType)
-        {
-            var assembly = Assembly.GetExecutingAssembly();
-            return assembly.GetTypes().Where(targetType.IsAssignableFrom);
         }
     }
 }

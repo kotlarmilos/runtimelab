@@ -5,43 +5,67 @@
             <typedeclaration kind="typealias" name="()" module="" />
         </entity>
         <entity managedNameSpace="System" managedTypeName="Byte">
-            <typedeclaration kind="struct" name="UInt8" module="Swift" metadataAccessor="$ss5UInt8V" />
+            <typedeclaration kind="struct" name="UInt8" module="Swift" metadataAccessor="$ss5UInt8VMa" />
         </entity>
         <entity managedNameSpace="System" managedTypeName="SByte">
-            <typedeclaration kind="struct" name="Int8" module="Swift" metadataAccessor="$ss4Int8V" />
+            <typedeclaration kind="struct" name="Int8" module="Swift" metadataAccessor="$ss4Int8VMa" />
         </entity>
         <entity managedNameSpace="System" managedTypeName="Int16">
-            <typedeclaration kind="struct" name="Int16" module="Swift" metadataAccessor="$ss5Int16V" />
+            <typedeclaration kind="struct" name="Int16" module="Swift" metadataAccessor="$ss5Int16VMa" />
         </entity>
         <entity managedNameSpace="System" managedTypeName="UInt16">
-            <typedeclaration kind="struct" name="UInt16" module="Swift" metadataAccessor="$ss6UInt16V" />
+            <typedeclaration kind="struct" name="UInt16" module="Swift" metadataAccessor="$ss6UInt16VMa" />
         </entity>
         <entity managedNameSpace="System" managedTypeName="Int32">
-            <typedeclaration kind="struct" name="Int32" module="Swift" metadataAccessor="$ss5Int32V" />
+            <typedeclaration kind="struct" name="Int32" module="Swift" metadataAccessor="$ss5Int32VMa" />
         </entity>
         <entity managedNameSpace="System" managedTypeName="UInt32">
-            <typedeclaration kind="struct" name="UInt32" module="Swift" metadataAccessor="$ss6UInt32V" />
+            <typedeclaration kind="struct" name="UInt32" module="Swift" metadataAccessor="$ss6UInt32VMa" />
         </entity>
         <entity managedNameSpace="System" managedTypeName="Int64">
-            <typedeclaration kind="struct" name="Int64" module="Swift" metadataAccessor="$ss5Int64V" />
+            <typedeclaration kind="struct" name="Int64" module="Swift" metadataAccessor="$ss5Int64VMa" />
         </entity>
         <entity managedNameSpace="System" managedTypeName="UInt64">
-            <typedeclaration kind="struct" name="UInt64" module="Swift" metadataAccessor="$ss6UInt64V" />
+            <typedeclaration kind="struct" name="UInt64" module="Swift" metadataAccessor="$ss6UInt64VMa" />
         </entity>
         <entity managedNameSpace="System" managedTypeName="Single">
-            <typedeclaration kind="struct" name="Float" module="Swift" metadataAccessor="$sSf" />
+            <typedeclaration kind="struct" name="Float" module="Swift" metadataAccessor="$sSfMa" />
         </entity>
         <entity managedNameSpace="System" managedTypeName="Double">
-            <typedeclaration kind="struct" name="Double" module="Swift" metadataAccessor="$sSd" />
+            <typedeclaration kind="struct" name="Double" module="Swift" metadataAccessor="$sSdMa" />
         </entity>
         <entity managedNameSpace="System" managedTypeName="IntPtr">
-            <typedeclaration kind="struct" name="Int" module="Swift" metadataAccessor="$sSi" />
+            <typedeclaration kind="struct" name="Int" module="Swift" metadataAccessor="$sSiMa" />
         </entity>
         <entity managedNameSpace="System" managedTypeName="UIntPtr">
-            <typedeclaration kind="struct" name="UInt" module="Swift" metadataAccessor="$sSu" />
+            <typedeclaration kind="struct" name="UInt" module="Swift" metadataAccessor="$sSuMa" />
         </entity>
         <entity managedNameSpace="System" managedTypeName="bool">
-            <typedeclaration kind="struct" name="Bool" module="Swift" metadataAccessor="$sSb" />
+            <typedeclaration kind="struct" name="Bool" module="Swift" metadataAccessor="$sSbMa" />
+        </entity>
+        <entity managedNameSpace="Swift.Runtime" managedTypeName="UnsafePointer">
+            <typedeclaration kind="struct" name="UnsafePointer" module="Swift" metadataAccessor="sSPMa" />
+        </entity>
+        <entity managedNameSpace="Swift.Runtime" managedTypeName="UnsafeMutablePointer">
+            <typedeclaration kind="struct" name="UnsafeMutablePointer" module="Swift" metadataAccessor="sSpMa" />
+        </entity>
+        <entity managedNameSpace="Swift.Runtime" managedTypeName="UnsafeRawPointer">
+            <typedeclaration kind="struct" name="UnsafeRawPointer" module="Swift" metadataAccessor="sSVMa" />
+        </entity>
+        <entity managedNameSpace="Swift.Runtime" managedTypeName="UnsafeMutableRawPointer">
+            <typedeclaration kind="struct" name="UnsafeMutableRawPointer" module="Swift" metadataAccessor="sSvMa" />
+        </entity>
+        <entity managedNameSpace="Swift.Runtime" managedTypeName="UnsafeBufferPointer">
+            <typedeclaration kind="struct" name="UnsafeBufferPointer" module="Swift" metadataAccessor="sSRMa" />
+        </entity>
+        <entity managedNameSpace="Swift.Runtime" managedTypeName="UnsafeMutableBufferPointer">
+            <typedeclaration kind="struct" name="UnsafeMutableBufferPointer" module="Swift" metadataAccessor="sSrMa" />
+        </entity>
+        <entity managedNameSpace="Swift.Runtime" managedTypeName="UnsafeRawBufferPointer">
+            <typedeclaration kind="struct" name="UnsafeRawBufferPointer" module="Swift" metadataAccessor="sSWMa" />
+        </entity>
+        <entity managedNameSpace="Swift.Runtime" managedTypeName="UnsafeMutableRawBufferPointer">
+            <typedeclaration kind="struct" name="UnsafeMutableRawBufferPointer" module="Swift" metadataAccessor="sSwMa" />
         </entity>
     </entities>
 </swifttypedatabase>
