@@ -203,3 +203,4 @@ launchSettings.json
 testing/
 src/samples/**/Unsafe*.cs
 src/samples/**/Swift.*.cs
+src/samples/**/Library/*.cs
