@@ -102,6 +102,24 @@ namespace Swift.Runtime
 		public uint ExtraInhabitantCount;
 
 		/// <summary>
+		/// Returns a tag for the given enumeration. The tags start at 0 with the first
+		/// case with a payload and continue in declaration order. Then they are followed by
+		/// cases without payloads in declaration order.
+		/// </summary>
+		public delegate* unmanaged<void *, TypeMetadata, nuint> GetEnumTag;
+
+		/// <summary>
+		/// Strips out the tag information from a given enumeration leaving the value behind.
+		/// This is useful when pulling the payload out of the enum.
+		/// </summary>
+		public delegate* unmanaged<void *, TypeMetadata, void> DestructiveProjectEnumData;
+
+		/// <summary>
+		/// Injects a tag into an enumeration. This is useful when creating an enum.
+		/// </summary>
+		public delegate* unmanaged<void *, nuint, TypeMetadata, void> DestructiveInjectEnumTag;
+
+		/// <summary>
 		/// Returns the alignment of the type in bytes.
 		/// </summary>
 		public int Alignment => (int)((Flags & ValueWitnessFlags.AlignmentMask) + 1);
