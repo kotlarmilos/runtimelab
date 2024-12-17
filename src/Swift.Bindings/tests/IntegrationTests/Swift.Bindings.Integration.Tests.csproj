@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <PreTestCommand>cd $(OutputPath)$(TargetFramework) &amp;&amp; cmake $(MSBuildThisFileDirectory) &amp;&amp; make</PreTestCommand>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Swift.Bindings.csproj">
+      <ReferenceSourceTarget></ReferenceSourceTarget>
+    </ProjectReference>
+  </ItemGroup>
+
+  <Target Name="CompileNativeLibs" AfterTargets="ResolveReferences" Condition="'$(OS)' != 'Windows_NT'">
+    <!-- Generate Swift libraries and projection tooling bindings -->
+    <Exec Command="$(PreTestCommand)" />
+
+    <!-- Compile generated bindings with tests -->
+    <ItemGroup>
+      <Compile Include="$(OutputPath)/**/*.cs" Exclude="$(OutputPath)/Library/*.cs;$(OutputPath)/Metadata/*.cs" />
+    </ItemGroup>
+  </Target>
+</Project>
+

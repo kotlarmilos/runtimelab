@@ -1,7 +1,10 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 using System.Security.Cryptography.X509Certificates;
+using Xunit;
 using BindingsGeneration.Demangling;
 using Xamarin;
-using Xunit;
 
 namespace BindingsGeneration.Tests
 {
@@ -24,8 +27,7 @@ namespace BindingsGeneration.Tests
 
             private static void InitializeResources()
             {
-                var (_, dylibPath) = BindingsGenerator.GetResolvedPathAndDylibPath("FrozenStructs/FrozenStructsTests.abi.json", "FrozenStructs/");
-                _dylibPath = dylibPath;
+                _dylibPath = "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/Resources/BridgeSupport/CoreFoundation.dylib";
             }
 
             [Fact]
