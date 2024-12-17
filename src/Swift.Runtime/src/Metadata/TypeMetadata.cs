@@ -124,6 +124,12 @@ public enum TypeMetadataKind {
 public readonly struct TypeMetadata : IEquatable<TypeMetadata> {
     readonly IntPtr handle;
 
+    static TypeMetadata ()
+    {
+        // TODO - add metadata for common built-in types like scalars and strings
+        cache = new TypeMetadataCache();
+    }
+
     /// <summary>
     /// An empty/invalid TypeMetadata object
     /// </summary>
@@ -237,4 +243,10 @@ public readonly struct TypeMetadata : IEquatable<TypeMetadata> {
     {
         return handle.GetHashCode ();
     }
+
+    static readonly TypeMetadataCache cache;
+    /// <summary>
+    /// Gets the type metadata cache for the runtime.
+    /// </summary>
+    public static ITypeMetadataCache Cache => cache;
 }
