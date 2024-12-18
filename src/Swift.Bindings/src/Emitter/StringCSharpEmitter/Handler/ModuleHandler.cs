@@ -23,7 +23,7 @@ namespace BindingsGeneration
         /// <summary>
         /// Constructs a new instance of ModuleHandler.
         /// </summary>
-        public IModuleHandler Construct ()
+        public IModuleHandler Construct()
         {
             return new ModuleHandler();
         }
@@ -34,7 +34,7 @@ namespace BindingsGeneration
     /// </summary>
     public class ModuleHandler : BaseHandler, IModuleHandler
     {
-        public ModuleHandler ()
+        public ModuleHandler()
         {
         }
 
@@ -42,9 +42,14 @@ namespace BindingsGeneration
         /// Marshals the module declaration.
         /// </summary>
         /// <param name="moduleDecl">The module declaration.</param>
-        public IEnvironment Marshal(BaseDecl moduleDecl)
+        /// <param name="typeDatabase">The type database instance.</param>
+        public IEnvironment Marshal(BaseDecl decl, TypeDatabase typeDatabase)
         {
-            return new ModuleEnvironment(moduleDecl);
+            if (decl is not ModuleDecl moduleDecl)
+            {
+                throw new ArgumentException("The provided decl must be a ModuleDecl.", nameof(decl));
+            }
+            return new ModuleEnvironment(moduleDecl, typeDatabase);
         }
 
         /// <summary>
@@ -54,11 +59,11 @@ namespace BindingsGeneration
         /// <param name="env">The environment.</param>
         /// <param name="conductor">The conductor instance.</param>
         /// <param name="typeDatabase">The type database instance.</param>
-        public void Emit(IndentedTextWriter writer, IEnvironment env, Conductor conductor, TypeDatabase typeDatabase)
+        public void Emit(IndentedTextWriter writer, IEnvironment env, Conductor conductor)
         {
             var moduleEnv = (ModuleEnvironment)env;
-            var moduleDecl = (ModuleDecl)moduleEnv.ModuleDecl;
-            
+            var moduleDecl = moduleEnv.ModuleDecl;
+
             var generatedNamespace = $"Swift.{moduleDecl.Name}";
 
             writer.WriteLine($"using System;");
@@ -82,18 +87,18 @@ namespace BindingsGeneration
                 writer.WriteLine($"public class {moduleDecl.Name}");
                 writer.WriteLine("{");
                 writer.Indent++;
-                foreach(FieldDecl fieldDecl in moduleDecl.Fields)
+                foreach (FieldDecl fieldDecl in moduleDecl.Fields)
                 {
                     string accessModifier = fieldDecl.Visibility == Visibility.Public ? "public" : "private";
                     writer.WriteLine($"{accessModifier} {fieldDecl.CSTypeIdentifier.Name} {fieldDecl.Name};");
                 }
                 writer.WriteLine();
-                foreach(MethodDecl methodDecl in moduleDecl.Methods)
+                foreach (MethodDecl methodDecl in moduleDecl.Methods)
                 {
                     if (conductor.TryGetMethodHandler(methodDecl, out var methodHandler))
                     {
-                        var methodEnv = methodHandler.Marshal(methodDecl);
-                        methodHandler.Emit(writer, methodEnv, conductor, typeDatabase);
+                        var methodEnv = methodHandler.Marshal(methodDecl, env.TypeDatabase);
+                        methodHandler.Emit(writer, methodEnv, conductor);
                     }
                     else
                     {
@@ -108,7 +113,7 @@ namespace BindingsGeneration
             }
 
             // Emit top-level types
-            base.HandleBaseDecl(writer, moduleDecl.Declarations, conductor, typeDatabase);
+            base.HandleBaseDecl(writer, moduleDecl.Declarations, conductor, env.TypeDatabase);
 
             writer.Indent--;
             writer.WriteLine("}");

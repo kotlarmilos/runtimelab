@@ -1,7 +1,11 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace Swift.Runtime;
 
@@ -127,7 +131,7 @@ public readonly struct TypeMetadata : IEquatable<TypeMetadata> {
     static TypeMetadata ()
     {
         // TODO - add metadata for common built-in types like scalars and strings
-        cache = new TypeMetadataCache();
+        cache = new TypeMetadataCache(KnownMetadata());
     }
 
     /// <summary>
@@ -249,4 +253,113 @@ public readonly struct TypeMetadata : IEquatable<TypeMetadata> {
     /// Gets the type metadata cache for the runtime.
     /// </summary>
     public static ITypeMetadataCache Cache => cache;
+
+    /// <summary>
+    /// Attempt to get the Swift type metadata for the given object instance
+    /// </summary>
+    /// <typeparam name="T">The type of the object</typeparam>
+    /// <param name="result">The result of looked up type metadata</param>
+    /// <returns>true on success false otherwise</returns>
+    public static bool TryGetTypeMetadata<T>([NotNullWhen(true)] out TypeMetadata? result)
+    {
+        if (cache.TryGet(typeof(T), out result))
+            return true;
+        return TryGetTypeMetadataUncached<T>(out result);
+    }
+
+    /// <summary>
+    /// Attempt to get the Swift type metadata for the given type
+    /// </summary>
+    /// <typeparam name="T">The type of the object</typeparam>
+    /// <returns>The result of the looked up type metadata on success</returns>
+    /// <exception cref="Exception">Throws when lookup fails</exception>
+    public static TypeMetadata GetTypeMetadataOrThrow<T>()
+    {
+        if (TryGetTypeMetadata<T>(out var result))
+            return result.Value;
+        throw new Exception(string.Format("Unable to get type metadata for type {0}", typeof(T).Name));
+    }
+
+    struct MetadataHelper<T> where T: ISwiftObject
+    {
+        public static TypeMetadata GetTypeMetadata()
+        {
+            return T.GetTypeMetadata();
+        }
+    }
+
+    /// <summary>
+    /// Attempt to get the Swift type metadata but without accessing the cache
+    /// </summary>
+    /// <typeparam name="T">The type of the object</typeparam>
+    /// <param name="result">The result of looked up type metadata</param>
+    /// <returns>true on success false otherwise</returns>
+    /// <exception cref="NotImplementedException">Throws if unable to look up the ISwiftObject.GetTypeMetadata method.</exception>
+    static bool TryGetTypeMetadataUncached<T>([NotNullWhen(true)] out TypeMetadata? result)
+    {
+        var type = typeof(T);
+        if (typeof(ISwiftObject).IsAssignableFrom(type))
+        {
+            var helper = typeof(MetadataHelper<>).MakeGenericType(type);
+            result = (TypeMetadata)helper.GetMethod("GetTypeMetadata")!.Invoke(null, null)!;
+            return true;
+        }
+
+        // NB - all further methods here should finish by putting the type into the cache
+
+        // TODO: handle tuples https://github.com/dotnet/runtimelab/issues/2873
+
+        // TODO: handle closures https://github.com/dotnet/runtimelab/issues/2874
+
+        // TODO: handle existential containers https://github.com/dotnet/runtimelab/issues/2875
+
+        result = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Returns an enumeration of known Type and TypeMetadata objects
+    /// </summary>
+    /// <returns>An enumeration of known Type and TypeMetadata objects</returns>
+    /// <exception cref="Exception">Throws if unable to load a library containing known types</exception>
+    static IEnumerable<(Type, TypeMetadata)> KnownMetadata()
+    {
+        var libraryHandle = NativeLibrary.Load(KnownLibraries.SwiftCore);
+        if (libraryHandle == IntPtr.Zero)
+            throw new Exception(string.Format("Unable to load library {0}", KnownLibraries.SwiftCore));
+        // types from libSwiftCore
+        yield return (typeof(bool), MetadataFromNativeLibrary(libraryHandle, "$sSbN"));
+        yield return (typeof(nint), MetadataFromNativeLibrary(libraryHandle, "$sSiN"));
+        yield return (typeof(nuint), MetadataFromNativeLibrary(libraryHandle, "$sSuN"));
+        yield return (typeof(float), MetadataFromNativeLibrary(libraryHandle, "$sSfN"));
+        yield return (typeof(double), MetadataFromNativeLibrary(libraryHandle, "$sSdN"));
+        yield return (typeof(sbyte), MetadataFromNativeLibrary(libraryHandle, "$ss4Int8VN"));
+        yield return (typeof(byte), MetadataFromNativeLibrary(libraryHandle, "$ss5UInt8VN"));
+        yield return (typeof(short), MetadataFromNativeLibrary(libraryHandle, "$ss5Int16VN"));
+        yield return (typeof(ushort), MetadataFromNativeLibrary(libraryHandle, "$ss6UInt16VN"));
+        yield return (typeof(int), MetadataFromNativeLibrary(libraryHandle, "$ss5Int32VN"));
+        yield return (typeof(uint), MetadataFromNativeLibrary(libraryHandle, "$ss6UInt32VN"));
+        yield return (typeof(long), MetadataFromNativeLibrary(libraryHandle, "$ss5Int64VN"));
+        yield return (typeof(ulong), MetadataFromNativeLibrary(libraryHandle, "$ss6UInt64VN"));
+        yield return (typeof(void), MetadataFromNativeLibrary(libraryHandle, "$sytN"));
+
+        // to add more primitives from different libraries, reassign libraryHandle and yield return
+        // the symbols starting from here.
+    }
+
+    /// <summary>
+    /// Loads type metadata from a NativeLibrary using the supplied symbol
+    /// </summary>
+    /// <param name="handle">handle to a library loaded by NativeLibrary</param>
+    /// <param name="symbolName">Swift symbol for a type metadata object</param>
+    /// <param name="libraryName">The library to load from. Defaults to libswiftCore.dylib</param>
+    /// <returns>A type metadata object for the symbol</returns>
+    /// <exception cref="Exception">Throws on failure to load symbol</exception>
+    static TypeMetadata MetadataFromNativeLibrary(IntPtr handle, string symbolName, string libraryName = KnownLibraries.SwiftCore)
+    {
+        var entryPoint = NativeLibrary.GetExport(handle, symbolName);
+        if (entryPoint == IntPtr.Zero)
+            throw new Exception(string.Format("Unable to find symbol {0} in library {1}", symbolName, libraryName));
+        return new TypeMetadata(entryPoint);
+    }
 }
