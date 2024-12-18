@@ -280,14 +280,6 @@ public readonly struct TypeMetadata : IEquatable<TypeMetadata> {
         throw new Exception(string.Format("Unable to get type metadata for type {0}", typeof(T).Name));
     }
 
-    struct MetadataHelper<T> where T: ISwiftObject
-    {
-        public static TypeMetadata GetTypeMetadata()
-        {
-            return T.GetTypeMetadata();
-        }
-    }
-
     /// <summary>
     /// Attempt to get the Swift type metadata but without accessing the cache
     /// </summary>
@@ -300,7 +292,7 @@ public readonly struct TypeMetadata : IEquatable<TypeMetadata> {
         var type = typeof(T);
         if (typeof(ISwiftObject).IsAssignableFrom(type))
         {
-            var helper = typeof(MetadataHelper<>).MakeGenericType(type);
+            var helper = typeof(SwiftObjectHelper<>).MakeGenericType(type);
             result = (TypeMetadata)helper.GetMethod("GetTypeMetadata")!.Invoke(null, null)!;
             return true;
         }
