@@ -10,13 +10,11 @@ namespace Swift.Runtime;
 /// Arc is a class containing p/invokes for Swift Automatic Reference Counting and memory management.
 /// </summary>
 public static class Arc {
-    const string swiftCore = "/usr/lib/swift/libswiftCore.dylib";
-
     /// <summary>
     /// Retain a heap-allocated Swift object
     /// </summary>
     /// <param name="p">Pointer to an unmanaged Swift object, must be non-null.</param>
-    [DllImport(swiftCore, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport(KnownLibraries.SwiftCore, CallingConvention = CallingConvention.Cdecl)]
     static extern void swift_retain(IntPtr p);
 
     /// <summary>
@@ -38,7 +36,7 @@ public static class Arc {
     /// </summary>
     /// <param name="p">A non-null pointer to an unmanaged Swift object</param>
     /// <returns>True if and only if the pointer in the process of being deallocated.</returns>
-    [DllImport(swiftCore, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport(KnownLibraries.SwiftCore, CallingConvention = CallingConvention.Cdecl)]
     [return: MarshalAs(UnmanagedType.I1)]
     static extern bool swift_isDeallocating(IntPtr p);
 
@@ -59,7 +57,7 @@ public static class Arc {
     /// Releases a heap-allocated Swift object
     /// </summary>
     /// <param name="p">Pointer to an unmanaged Swift object, must be non-null.</param>
-    [DllImport(swiftCore, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport(KnownLibraries.SwiftCore, CallingConvention = CallingConvention.Cdecl)]
     static extern void swift_release(IntPtr p);
 
     /// <summary>
@@ -85,7 +83,7 @@ public static class Arc {
     /// Retains an 'unowned' heap-allocated Swift object.
     /// </summary>
     /// <param name="p">Pointer to an unmanaged Swift object, must be non-null.</param>
-    [DllImport(swiftCore, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport(KnownLibraries.SwiftCore, CallingConvention = CallingConvention.Cdecl)]
     static extern void swift_unownedRetain(IntPtr p);
 
     /// <summary>
@@ -106,7 +104,7 @@ public static class Arc {
     /// Releases an 'unowned' heap-allocated Swift object.
     /// </summary>
     /// <param name="p">Pointer to an unmanaged Swift object, must be non-null.</param>
-    [DllImport(swiftCore, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport(KnownLibraries.SwiftCore, CallingConvention = CallingConvention.Cdecl)]
     static extern void swift_unownedRelease(IntPtr p);
 
     /// <summary>
@@ -128,7 +126,7 @@ public static class Arc {
     /// </summary>
     /// <param name="p">Pointer to an unmanaged Swift object, must be non-null.</param>
     /// <returns>The retain count</returns>
-    [DllImport(swiftCore, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport(KnownLibraries.SwiftCore, CallingConvention = CallingConvention.Cdecl)]
     static extern nint swift_retainCount(IntPtr p);
 
     /// <summary>
@@ -149,7 +147,7 @@ public static class Arc {
     /// </summary>
     /// <param name="p">Pointer to an unmanaged Swift object, must be non-null.</param>
     /// <returns>The unowned retain count</returns>
-    [DllImport(swiftCore, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport(KnownLibraries.SwiftCore, CallingConvention = CallingConvention.Cdecl)]
     static extern nint swift_unownedRetainCount(IntPtr p);
 
     /// <summary>
