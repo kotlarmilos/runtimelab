@@ -7,34 +7,34 @@ using Swift.Runtime;
 namespace BindingsGeneration
 {
     /// <summary>
-    /// Factory class for creating instances of StructHandler.
+    /// Factory class for creating instances of FrozenStructHandler.
     /// </summary>
-    public class StructHandlerFactory : IFactory<BaseDecl, ITypeHandler>
+    public class FrozenStructHandlerFactory : IFactory<BaseDecl, ITypeHandler>
     {
-         /// <summary>
+        /// <summary>
         /// Determines if the factory handles the specified declaration.
         /// </summary>
         /// <param name="decl">The base declaration.</param>
         public bool Handles(BaseDecl decl)
         {
-            return decl is StructDecl;
+            return decl is StructDecl structDecl && MarshallingHelpers.StructIsMarshalledAsCSStruct(structDecl);
         }
 
         /// <summary>
         /// Constructs a new instance of StructHandler.
         /// </summary>
-        public ITypeHandler Construct ()
+        public ITypeHandler Construct()
         {
-            return new StructHandler();
+            return new FrozenStructHandler();
         }
     }
 
     /// <summary>
-    /// Handler class for struct declarations.
+    /// Handler class for frozen struct declarations.
     /// </summary>
-    public class StructHandler : BaseHandler, ITypeHandler
+    public class FrozenStructHandler : BaseHandler, ITypeHandler
     {
-        public StructHandler ()
+        public FrozenStructHandler()
         {
         }
 
@@ -42,9 +42,14 @@ namespace BindingsGeneration
         /// Marshals the specified struct declaration.
         /// </summary>
         /// <param name="structDecl">The struct declaration.</param>
-        public IEnvironment Marshal(BaseDecl structDecl)
+        /// <param name="typeDatabase">The type database instance.</param>
+        public IEnvironment Marshal(BaseDecl decl, TypeDatabase typeDatabase)
         {
-            return new TypeEnvironment(structDecl);
+            if (decl is not StructDecl structDecl)
+            {
+                throw new ArgumentException("The provided decl must be a StructDecl.", nameof(decl));
+            }
+            return new TypeEnvironment(structDecl, typeDatabase);
         }
 
         /// <summary>
@@ -54,14 +59,14 @@ namespace BindingsGeneration
         /// <param name="env">The environment.</param>
         /// <param name="conductor">The conductor instance.</param>
         /// <param name="typeDatabase">The type database instance.</param>
-        public void Emit(IndentedTextWriter writer, IEnvironment env, Conductor conductor, TypeDatabase typeDatabase)
+        public void Emit(IndentedTextWriter writer, IEnvironment env, Conductor conductor)
         {
             var structEnv = (TypeEnvironment)env;
             var structDecl = (StructDecl)structEnv.TypeDecl;
             var parentDecl = structDecl.ParentDecl ?? throw new ArgumentNullException(nameof(structDecl.ParentDecl));
             var moduleDecl = structDecl.ModuleDecl ?? throw new ArgumentNullException(nameof(structDecl.ParentDecl));
             // Retrieve type info from the type database
-            var typeRecord = typeDatabase.Registrar.GetType(moduleDecl.Name, structDecl.Name);
+            var typeRecord = env.TypeDatabase.Registrar.GetType(moduleDecl.Name, structDecl.Name);
             SwiftTypeInfo? swiftTypeInfo = typeRecord?.SwiftTypeInfo;
 
             if (swiftTypeInfo.HasValue)
@@ -91,7 +96,7 @@ namespace BindingsGeneration
             }
             writer.WriteLine();
 
-            base.HandleBaseDecl(writer, structDecl.Declarations, conductor, typeDatabase);
+            base.HandleBaseDecl(writer, structDecl.Declarations, conductor, env.TypeDatabase);
 
             writer.Indent--;
             writer.WriteLine("}");
@@ -127,6 +132,152 @@ namespace BindingsGeneration
     }
 
     /// <summary>
+    /// Factory class for creating instances of NonFrozenStructHandler.
+    /// </summary>
+    public class NonFrozenStructHandlerFactory : IFactory<BaseDecl, ITypeHandler>
+    {
+        /// <summary>
+        /// Determines if the factory handles the specified declaration.
+        /// </summary>
+        /// <param name="decl">The base declaration.</param>
+        public bool Handles(BaseDecl decl)
+        {
+            return decl is StructDecl structDecl && !MarshallingHelpers.StructIsMarshalledAsCSStruct(structDecl);
+        }
+
+        /// <summary>
+        /// Constructs a new instance of StructHandler.
+        /// </summary>
+        public ITypeHandler Construct()
+        {
+            return new NonFrozenStructHandler();
+        }
+    }
+
+    /// <summary>
+    /// Handler class for non-frozen struct declarations.
+    /// </summary>
+    public class NonFrozenStructHandler : BaseHandler, ITypeHandler
+    {
+        public NonFrozenStructHandler()
+        {
+        }
+
+        /// <summary>
+        /// Marshals the specified struct declaration.
+        /// </summary>
+        /// <param name="structDecl">The struct declaration.</param>
+        /// <param name="typeDatabase">The type database instance.</param>
+        public IEnvironment Marshal(BaseDecl decl, TypeDatabase typeDatabase)
+        {
+            if (decl is not StructDecl structDecl)
+            {
+                throw new ArgumentException("The provided decl must be a StructDecl.", nameof(decl));
+
+            }
+            return new TypeEnvironment(structDecl, typeDatabase);
+        }
+
+        /// <summary>
+        /// Emits the code for the specified environment.
+        /// </summary>
+        /// <param name="writer">The IndentedTextWriter instance.</param>
+        /// <param name="env">The environment.</param>
+        /// <param name="conductor">The conductor instance.</param>
+        /// <param name="typeDatabase">The type database instance.</param>
+        public void Emit(IndentedTextWriter writer, IEnvironment env, Conductor conductor)
+        {
+            var structEnv = (TypeEnvironment)env;
+            var structDecl = (StructDecl)structEnv.TypeDecl;
+            var parentDecl = structDecl.ParentDecl ?? throw new ArgumentNullException(nameof(structDecl.ParentDecl));
+            var moduleDecl = structDecl.ModuleDecl ?? throw new ArgumentNullException(nameof(structDecl.ModuleDecl));
+            var typeRecord = env.TypeDatabase.Registrar.GetType(moduleDecl.Name, structDecl.Name);
+            SwiftTypeInfo? swiftTypeInfo = typeRecord?.SwiftTypeInfo;
+
+            writer.WriteLine($"public unsafe class {structDecl.Name} : IDisposable");
+            writer.WriteLine("{");
+            writer.Indent++;
+
+            WritePrivateFields(writer);
+            WriteDisposeMethod(writer, structDecl.Name);
+            WriteFinalizer(writer, structDecl.Name);
+            WritePayload(writer);
+            WriteMetadata(writer, moduleDecl.Name, structDecl.MangledName, env.TypeDatabase);
+
+            writer.WriteLine();
+            base.HandleBaseDecl(writer, structDecl.Declarations, conductor, env.TypeDatabase);
+
+            writer.Indent--;
+            writer.WriteLine("}");
+        }
+
+        /// <summary>
+        /// Writes the private fields for the class.
+        /// </summary>
+        private static void WritePrivateFields(IndentedTextWriter writer)
+        {
+            writer.WriteLine();
+            writer.WriteLine("private static nuint _payloadSize = Metadata.Size;");
+            writer.WriteLine("private SwiftHandle _payload = SwiftHandle.Zero;");
+            writer.WriteLine("private bool _disposed = false;");
+        }
+
+        /// <summary>
+        /// Writes the Dispose method for the class.
+        /// </summary>
+        private static void WriteDisposeMethod(IndentedTextWriter writer, string className)
+        {
+            writer.WriteLine("public void Dispose()");
+            writer.WriteLine("{");
+            writer.Indent++;
+            writer.WriteLine("if (!_disposed)");
+            writer.WriteLine("{");
+            writer.Indent++;
+            writer.WriteLine("NativeMemory.Free((void*)_payload);");
+            writer.WriteLine("_disposed = true;");
+            writer.WriteLine("GC.SuppressFinalize(this);");
+            writer.Indent--;
+            writer.WriteLine("}");
+            writer.Indent--;
+            writer.WriteLine("}");
+        }
+
+        /// <summary>
+        /// Writes the finalizer for the class.
+        /// </summary>
+        private static void WriteFinalizer(IndentedTextWriter writer, string className)
+        {
+            writer.WriteLine($"~{className}()");
+            writer.WriteLine("{");
+            writer.Indent++;
+            writer.WriteLine("NativeMemory.Free((void*)_payload);");
+            writer.Indent--;
+            writer.WriteLine("}");
+        }
+
+        /// <summary>
+        /// Writes the metadata for the class.
+        /// </summary>
+        private static void WriteMetadata(IndentedTextWriter writer, string moduleName, string mangledName, TypeDatabase typeDatabase)
+        {
+            writer.WriteLine("public static TypeMetadata Metadata => PInvoke_getMetadata();");
+
+            writer.WriteLine("[UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]");
+            string libPath = typeDatabase.GetLibraryName(moduleName);
+            writer.WriteLine($"[DllImport(\"{libPath}\", EntryPoint = \"{mangledName}Ma\")]");
+            writer.WriteLine("internal static extern TypeMetadata PInvoke_getMetadata();");
+        }
+
+        /// <summary>
+        /// Writes the payload accessor for the class.
+        /// </summary>
+        private static void WritePayload(IndentedTextWriter writer)
+        {
+            writer.WriteLine("public SwiftHandle Payload => _payload;");
+        }
+    }
+
+    /// <summary>
     /// Factory class for creating instances of ClassHandler.
     /// </summary>
     public class ClassHandlerFactory : IFactory<BaseDecl, ITypeHandler>
@@ -143,7 +294,7 @@ namespace BindingsGeneration
         /// <summary>
         /// Constructs a new instance of ClassHandler.
         /// </summary>
-        public ITypeHandler Construct ()
+        public ITypeHandler Construct()
         {
             return new ClassHandler();
         }
@@ -154,17 +305,22 @@ namespace BindingsGeneration
     /// </summary>
     public class ClassHandler : BaseHandler, ITypeHandler
     {
-        public ClassHandler ()
+        public ClassHandler()
         {
         }
 
-         /// <summary>
+        /// <summary>
         /// Marshals the specified class declaration.
         /// </summary>
         /// <param name="classDecl">The class declaration.</param>
-        public IEnvironment Marshal(BaseDecl classDecl)
+        /// <param name="typeDatabase">The type database instance.</param>
+        public IEnvironment Marshal(BaseDecl decl, TypeDatabase typeDatabase)
         {
-            return new TypeEnvironment(classDecl);
+            if (decl is not ClassDecl classDecl)
+            {
+                throw new ArgumentException("The provided decl must be a ClassDecl.", nameof(decl));
+            }
+            return new TypeEnvironment(classDecl, typeDatabase);
         }
 
         /// <summary>
@@ -174,15 +330,15 @@ namespace BindingsGeneration
         /// <param name="env">The environment.</param>
         /// <param name="conductor">The conductor instance.</param>
         /// <param name="typeDatabase">The type database instance.</param>
-        public void Emit(IndentedTextWriter writer, IEnvironment env, Conductor conductor, TypeDatabase typeDatabase)
+        public void Emit(IndentedTextWriter writer, IEnvironment env, Conductor conductor)
         {
             var classEnv = (TypeEnvironment)env;
             var classDecl = (ClassDecl)classEnv.TypeDecl;
-            
+
             writer.WriteLine($"public unsafe class {classDecl.Name} {{");
             writer.Indent++;
 
-            base.HandleBaseDecl(writer, classDecl.Declarations, conductor, typeDatabase);
+            base.HandleBaseDecl(writer, classDecl.Declarations, conductor, env.TypeDatabase);
 
             writer.Indent--;
             writer.WriteLine("}");
