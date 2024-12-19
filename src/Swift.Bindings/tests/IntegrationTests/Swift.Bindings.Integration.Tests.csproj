@@ -17,7 +17,7 @@
     </ProjectReference>
   </ItemGroup>
 
-  <Target Name="CompileNativeLibs" AfterTargets="ResolveReferences" Condition="'$(OS)' != 'Windows_NT'">
+  <Target Name="CompileNativeLibs" AfterTargets="ResolveReferences">
     <!-- Generate Swift libraries and projection tooling bindings -->
     <Exec Command="$(PreTestCommand)" />
 

@@ -39,7 +39,7 @@ foreach(SOURCE_FILE ${SOURCES})
     get_filename_component(DOTNET_CONFIGURATION ${DOTNET_CONFIGURATION} NAME)
 
     add_custom_command(TARGET ${SOURCE_BASE_NAME} POST_BUILD
-        COMMAND dotnet ${CMAKE_BINARY_DIR}/../../../Swift.Bindings/${DOTNET_CONFIGURATION}/${DOTNET_VERSION}/Swift.Bindings.dll -a ${OUTPUT_DIR}/${SOURCE_BASE_NAME}.abi.json -o ${OUTPUT_DIR}
+        COMMAND ${CMAKE_SOURCE_DIR}/../../../../dotnet.sh ${CMAKE_BINARY_DIR}/../../../Swift.Bindings/${DOTNET_CONFIGURATION}/${DOTNET_VERSION}/Swift.Bindings.dll -a ${OUTPUT_DIR}/${SOURCE_BASE_NAME}.abi.json -o ${OUTPUT_DIR}
         COMMENT "Generating ${SOURCE_BASE_NAME} bindings"
     )
 endforeach()

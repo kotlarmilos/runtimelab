@@ -74,7 +74,7 @@ function ExtractABI {
     echo "Generating ABI for framework '$framework', platform '$platform', architecture '$arch'"
     
     local sdk_path=$(xcrun -sdk $(echo "$platform" | tr '[:upper:]' '[:lower:]') --show-sdk-path)
-    local swift_interface_path="/Applications/Xcode.app/Contents/Developer/Platforms/${platform}.platform/Developer/SDKs/${platform}.sdk/System/Library/Frameworks/${framework}.framework/Versions/Current/Modules/${framework}.swiftmodule/${arch}.swiftinterface"
+    local swift_interface_path="$(xcode-select -p)/Platforms/${platform}.platform/Developer/SDKs/${platform}.sdk/System/Library/Frameworks/${framework}.framework/Versions/Current/Modules/${framework}.swiftmodule/${arch}.swiftinterface"
 
     if [ ! -f "$swift_interface_path" ]; then
         echo "Error: Swift interface file not found for framework '$framework'."
@@ -91,7 +91,7 @@ function ExtractABI {
 function InvokeProjectionTooling {
     local framework=$1
 
-    $scriptroot/.dotnet/dotnet $scriptroot/artifacts/bin/Swift.Bindings/Release/net9.0/Swift.Bindings.dll -a "$framework" -o "./"
+    $scriptroot/dotnet.sh $scriptroot/artifacts/bin/Swift.Bindings/Release/net9.0/Swift.Bindings.dll -a "$framework" -o "./"
 
     if $experimental; then
         rm -rf "./Swift.$framework.cs"
@@ -116,7 +116,7 @@ function PackNuGet {
 </Project>
 EOL
 
-    $scriptroot/.dotnet/dotnet pack "$project_file"
+    $scriptroot/dotnet.sh pack "$project_file"
 }
 
 function Generate {
