@@ -34,19 +34,26 @@ namespace BindingsGeneration
 
         public static bool ArgumentIsMarshalledAsCSStruct(ArgumentDecl argumentDecl, TypeDatabase typeDatabase)
         {
-            var typeRecord = GetType(argumentDecl, typeDatabase.Registrar); //TODO: Add information to typeRecord if thing is a struct
+            var typeRecord = GetType(argumentDecl, typeDatabase.Registrar) ?? throw new NotImplementedException($"Type {argumentDecl.Name} not found in type database"); //TODO: Add information to typeRecord if thing is a struct
             return typeRecord.IsFrozen && typeRecord.IsBlittable;
         }
 
-        private static TypeRecord GetType(ArgumentDecl argumentDecl, TypeRegistrar typeRegistrar)
+        public static TypeRecord? GetType(ArgumentDecl argumentDecl, TypeRegistrar typeRegistrar)
         {
-            if (argumentDecl.SwiftTypeSpec is not NamedTypeSpec swiftTypeSpec)
+            if (argumentDecl.SwiftTypeSpec is NamedTypeSpec namedTypeSpec)
             {
-                throw new NotImplementedException($"{argumentDecl} is not a NamedTypeSpec");
+                var typeRecord = typeRegistrar.GetType(namedTypeSpec.Module, namedTypeSpec.NameWithoutModule);
+                return typeRecord;
             }
 
-            var typeRecord = typeRegistrar.GetType(swiftTypeSpec.Module, swiftTypeSpec.NameWithoutModule) ?? throw new NotImplementedException($"Type {swiftTypeSpec.Name} not found in type database");
-            return typeRecord;
+            if (argumentDecl.SwiftTypeSpec is TupleTypeSpec tupleTypeSpec)
+            {
+                // Void is an empty tuple
+                var typeRecord = typeRegistrar.GetType("Swift", tupleTypeSpec.ToString(true));
+                return typeRecord;
+            }
+
+            throw new NotImplementedException($"{argumentDecl} is not a NamedTypeSpec nor TupleTypeSpec");
         }
     }
 }

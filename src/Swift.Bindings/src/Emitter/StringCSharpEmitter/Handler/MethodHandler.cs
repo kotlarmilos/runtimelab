@@ -174,11 +174,12 @@ namespace BindingsGeneration
         {
             var methodDecl = (MethodDecl)env.MethodDecl;
             var parentDecl = methodDecl.ParentDecl ?? throw new ArgumentNullException(nameof(methodDecl.ParentDecl));
+            var wrapperSignature = env.SignatureHandler.GetWrapperSignature();
 
             var pInvokeName = NameProvider.GetPInvokeName(methodDecl);
             var staticKeyword = methodDecl.MethodType == MethodType.Static || parentDecl is ModuleDecl ? "static " : "";
 
-            writer.WriteLine($"public {staticKeyword}{methodDecl.CSSignature.First().CSTypeIdentifier.Name} {methodDecl.Name}({env.SignatureHandler.GetWrapperSignature().ParametersString()})");
+            writer.WriteLine($"public {staticKeyword}{wrapperSignature.ReturnType} {methodDecl.Name}({wrapperSignature.ParametersString()})");
             writer.WriteLine("{");
             writer.Indent++;
 
@@ -192,7 +193,7 @@ namespace BindingsGeneration
 
             // TODO: Add Indirect result marshalling to methods other than constructors
 
-            var returnPrefix = methodDecl.CSSignature.First().CSTypeIdentifier.Name == "void" ? "" : "return ";
+            var returnPrefix = methodDecl.CSSignature.First().CSTypeIdentifier.Name == "()" ? "" : "return ";
             var invokeArguments = env.SignatureHandler.GetPInvokeSignature().CallArgumentsString();
 
             // Call the PInvoke method
@@ -247,7 +248,14 @@ namespace BindingsGeneration
         /// </summary>
         public void HandleReturnType()
         {
-            var returnType = MethodDecl.CSSignature.First().CSTypeIdentifier.Name;
+            var argument = MethodDecl.CSSignature.First();
+            var returnType = argument.CSTypeIdentifier.Name;
+            var typeRecord = MarshallingHelpers.GetType(argument, TypeDatabase.Registrar);
+            if (typeRecord == null || !typeRecord.IsProcessed)
+            {                    
+                Console.WriteLine($"Method {MethodDecl.Name} has unprocessed return type {returnType}");
+                returnType = "AnyType";
+            }
             SetReturnType(returnType);
         }
 
@@ -258,7 +266,14 @@ namespace BindingsGeneration
         {
             foreach (var argument in MethodDecl.CSSignature.Skip(1))
             {
-                AddParameter(argument.CSTypeIdentifier.Name, argument.Name);
+                string typeIdentifier = argument.CSTypeIdentifier.Name;
+                var typeRecord = MarshallingHelpers.GetType(argument, TypeDatabase.Registrar);
+                if (typeRecord == null || !typeRecord.IsProcessed)
+                {
+                    Console.WriteLine($"Method {MethodDecl.Name} has unprocessed argument {typeIdentifier}");
+                    typeIdentifier = "AnyType";
+                }
+                AddParameter(typeIdentifier, argument.Name);
             }
         }
 
@@ -278,7 +293,14 @@ namespace BindingsGeneration
         /// <param name="returnType">The return type.</param>
         private void SetReturnType(string returnType)
         {
-            _returnType = returnType;
+            if (returnType == "()")
+            {
+                _returnType = "void";
+            }
+            else
+            {
+                _returnType = returnType;
+            }
         }
 
         /// <summary>
@@ -325,7 +347,14 @@ namespace BindingsGeneration
         {
             if (!MarshallingHelpers.MethodRequiresIndirectResult(MethodDecl, ParentDecl, TypeDatabase))
             {
-                var returnType = MethodDecl.CSSignature.First().CSTypeIdentifier.Name;
+                var argument = MethodDecl.CSSignature.First();
+                var returnType = argument.CSTypeIdentifier.Name;
+                var typeRecord = MarshallingHelpers.GetType(argument, TypeDatabase.Registrar);
+                if (typeRecord == null || !typeRecord.IsProcessed)
+                {                    
+                    Console.WriteLine($"Method {MethodDecl.Name} has unprocessed return type {returnType}");
+                    returnType = "AnyType";
+                }
                 SetReturnType(returnType);
             }
             else
@@ -386,7 +415,14 @@ namespace BindingsGeneration
         /// <param name="returnType">The return type.</param>
         private void SetReturnType(string returnType)
         {
-            _returnType = returnType;
+            if (returnType == "()")
+            {
+                _returnType = "void";
+            }
+            else
+            {
+                _returnType = returnType;
+            }
         }
 
         /// <summary>

@@ -60,6 +60,11 @@ namespace Swift.Runtime
         public required string MetadataAccessor { get; set; }
 
         /// <summary>
+        /// The Swift mangled name.
+        /// </summary>
+        public required string MangledName { get; set; }
+
+        /// <summary>
         /// The Swift runtime type information.
         /// </summary>
         public SwiftTypeInfo? SwiftTypeInfo { get; set; }
@@ -103,8 +108,9 @@ namespace Swift.Runtime
         /// </summary>
         /// <param name="moduleName">The Swift module name.</param>
         /// <param name="typeIdentifier">The Swift type name.</param>
+        /// <param name="mangledName">The Swift mangled name.</param>
         /// <returns>The type record.</returns>
-        public TypeRecord RegisterType(string moduleName, string typeIdentifier)
+        public TypeRecord RegisterType(string moduleName, string typeIdentifier, string mangledName)
         {
             var moduleRecord = RegisterModule(moduleName);
             return moduleRecord.TypeRecords.GetOrAdd(typeIdentifier, _ => new TypeRecord
@@ -114,6 +120,7 @@ namespace Swift.Runtime
                 SwiftTypeInfo = null,
                 IsProcessed = false,
                 MetadataAccessor = string.Empty,
+                MangledName = mangledName,
                 IsBlittable = false,
                 IsFrozen = false
             });
