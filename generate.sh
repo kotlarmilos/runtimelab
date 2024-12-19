@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+set -e
+set -o pipefail
 
 usage()
 {
@@ -84,14 +86,16 @@ function ExtractABI {
     xcrun swift-frontend -compile-module-from-interface "$swift_interface_path" \
         -module-name "$framework" \
         -sdk "$sdk_path" \
-        -emit-abi-descriptor-path "./${framework}.abi.json"
+        -emit-abi-descriptor-path "./$framework.abi.json"
 }
 
 # Function to generate bindings
 function InvokeProjectionTooling {
     local framework=$1
 
-    $scriptroot/dotnet.sh $scriptroot/artifacts/bin/Swift.Bindings/Release/net9.0/Swift.Bindings.dll -a "$framework" -o "./"
+    $scriptroot/dotnet.sh $scriptroot/artifacts/bin/Swift.Bindings/Release/net9.0/Swift.Bindings.dll -a "./$framework.abi.json" -d "/System/Library/Frameworks/$framework.framework/$framework" -o "./"
+
+    cat "./Swift.$framework.cs"
 
     if $experimental; then
         rm -rf "./Swift.$framework.cs"
