@@ -47,6 +47,9 @@ extends:
             name: Azure Pipelines
             image: macos-latest
             os: macOS
+          bindings:
+            isBindingsBuild: true
+            scriptArgs: '--platform MacOSX --arch arm64e-apple-macos --framework StoreKit --framework SwiftUI --experimental'
 
     - ${{ if eq(variables.isOfficialBuild, true) }}:
       - template: /eng/pipelines/common/templates/publish.yml

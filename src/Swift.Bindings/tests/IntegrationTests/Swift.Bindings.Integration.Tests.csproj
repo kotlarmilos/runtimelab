@@ -17,13 +17,13 @@
     </ProjectReference>
   </ItemGroup>
 
-  <Target Name="CompileNativeLibs" AfterTargets="ResolveReferences" Condition="'$(OS)' != 'Windows_NT'">
+  <Target Name="CompileNativeLibs" AfterTargets="ResolveReferences">
     <!-- Generate Swift libraries and projection tooling bindings -->
     <Exec Command="$(PreTestCommand)" />
 
     <!-- Compile generated bindings with tests -->
     <ItemGroup>
-      <Compile Include="$(OutputPath)/**/*.cs" Exclude="$(OutputPath)/Library/*.cs;$(OutputPath)/Metadata/*.cs" />
+      <Compile Include="$(OutputPath)/**/*.cs" Exclude="$(OutputPath)/Metadata/*.cs;$(OutputPath)/ManualBindings/*.cs" />
     </ItemGroup>
   </Target>
 </Project>

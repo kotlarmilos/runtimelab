@@ -24,8 +24,13 @@
     </ImageAsset>
     <ImageAsset Include="Assets.xcassets\TrailImage.imageset\Contents.json">
       <Visible>false</Visible>
-    </ImageAsset>   
+    </ImageAsset>
   </ItemGroup>
+
+  <!-- Reference Swift.Bindings.MacOSX.Experimental NuGet package locally -->
+  <!-- <ItemGroup>
+    <PackageReference Include="Swift.Bindings.MacOSX.Experimental" />
+  </ItemGroup> -->
 
   <!-- Notes about the values set below:
     1. For macOS it's possible to sign both the app bundle (EnableCodesigning=true) and the package (*.pkg) (EnablePackageSigning=true),
