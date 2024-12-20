@@ -293,14 +293,7 @@ namespace BindingsGeneration
         /// <param name="returnType">The return type.</param>
         private void SetReturnType(string returnType)
         {
-            if (returnType == "()")
-            {
-                _returnType = "void";
-            }
-            else
-            {
-                _returnType = returnType;
-            }
+            _returnType = returnType;
         }
 
         /// <summary>
@@ -415,14 +408,7 @@ namespace BindingsGeneration
         /// <param name="returnType">The return type.</param>
         private void SetReturnType(string returnType)
         {
-            if (returnType == "()")
-            {
-                _returnType = "void";
-            }
-            else
-            {
-                _returnType = returnType;
-            }
+            _returnType = returnType;
         }
 
         /// <summary>
