@@ -49,7 +49,7 @@ namespace BindingsGeneration
             if (argumentDecl.SwiftTypeSpec is TupleTypeSpec tupleTypeSpec)
             {
                 // Void is an empty tuple
-                var typeRecord = typeRegistrar.GetType("Swift", tupleTypeSpec.ToString(true));
+                var typeRecord = typeRegistrar.GetType(string.Empty, tupleTypeSpec.ToString(true));
                 return typeRecord;
             }
 

@@ -130,6 +130,7 @@ namespace BindingsGeneration
             var moduleDecl = new ModuleDecl
             {
                 Name = ExtractUniqueName(moduleName),
+                FullyQualifiedName = string.Empty,
                 Fields = new List<FieldDecl>(),
                 Methods = new List<MethodDecl>(),
                 Declarations = new List<BaseDecl>(),
@@ -234,14 +235,11 @@ namespace BindingsGeneration
         /// <returns>The type declaration.</returns>
         private TypeDecl? HandleTypeDecl(Node node, BaseDecl parentDecl, BaseDecl moduleDecl)
         {
-            if (_typeDatabase.IsTypeProcessed(node.ModuleName, node.Name))
+            if (_typeDatabase.IsTypeProcessed(node.ModuleName, ExtractFullyQualifiedName(parentDecl.FullyQualifiedName, node.Name)))
             {
-                if (_typeDatabase.Registrar.GetType(node.ModuleName, node.Name)!.MangledName == node.MangledName)
-                {
-                    if (_verbose > 1)
-                        Console.WriteLine($"Type '{node.Name}' already processed. Skipping.");
-                    return null;
-                }
+                if (_verbose > 1)
+                    Console.WriteLine($"Type '{node.Name}' already processed. Skipping.");
+                return null;
             }
 
             if (string.IsNullOrEmpty(node.MangledName))
@@ -252,7 +250,7 @@ namespace BindingsGeneration
             }
 
             TypeDecl? decl = null;
-            TypeRecord typeRecord = _typeDatabase.Registrar.RegisterType(node.ModuleName, node.Name, node.MangledName);
+            TypeRecord typeRecord = _typeDatabase.Registrar.RegisterType(node.ModuleName, ExtractFullyQualifiedName(parentDecl.FullyQualifiedName, node.Name));
             IntPtr metadataPtr;
 
             switch (node.DeclKind)
@@ -305,6 +303,7 @@ namespace BindingsGeneration
             return new StructDecl
             {
                 Name = ExtractUniqueName(node.Name),
+                FullyQualifiedName = ExtractFullyQualifiedName(parentDecl.FullyQualifiedName, node.Name),
                 MangledName = node.MangledName,
                 Fields = new List<FieldDecl>(),
                 Declarations = new List<BaseDecl>(),
@@ -327,6 +326,7 @@ namespace BindingsGeneration
             return new ClassDecl
             {
                 Name = ExtractUniqueName(node.Name),
+                FullyQualifiedName = ExtractFullyQualifiedName(parentDecl.FullyQualifiedName, node.Name),
                 MangledName = node.MangledName,
                 Fields = new List<FieldDecl>(),
                 Declarations = new List<BaseDecl>(),
@@ -350,6 +350,7 @@ namespace BindingsGeneration
             var methodDecl = new MethodDecl
             {
                 Name = ExtractUniqueName(node.Name),
+                FullyQualifiedName = parentDecl.FullyQualifiedName,
                 // Constructors for structs are named with a trailing 'C' instead of 'c'
                 // because a constructor wrapper is missing in the library.
                 MangledName = node.Kind == "Constructor" ? PatchMangledName(node.MangledName) : node.MangledName,
@@ -371,6 +372,7 @@ namespace BindingsGeneration
                         CSTypeIdentifier = typeDecl,
                         SwiftTypeSpec = typeSpec,
                         Name = paramNames[i],
+                        FullyQualifiedName = string.Empty,
                         PrivateName = string.Empty,
                         IsInOut = false,
                         ParentDecl = methodDecl,
@@ -398,6 +400,7 @@ namespace BindingsGeneration
                 CSTypeIdentifier = typeDecl,
                 SwiftTypeSpec = typeSpec,
                 Name = node.Name,
+                FullyQualifiedName = ExtractFullyQualifiedName(parentDecl.FullyQualifiedName, node.Name),
                 Visibility = node.IsInternal ?? false ? Visibility.Private : Visibility.Public,
                 ParentDecl = parentDecl,
                 ModuleDecl = moduleDecl
@@ -463,6 +466,7 @@ namespace BindingsGeneration
             var typeDecl = new TypeDecl
             {
                 Name = string.Empty,
+                FullyQualifiedName = string.Empty,
                 MangledName = node.MangledName,
                 Fields = new List<FieldDecl>(),
                 Declarations = new List<BaseDecl>(),
@@ -496,6 +500,7 @@ namespace BindingsGeneration
                 typeRecord = _typeDatabase.GetTypeMapping(moduleName, typeIdentifier);
                 typeDecl.Name = typeRecord.TypeIdentifier;
             }
+            typeDecl.FullyQualifiedName = typeDecl.Name;
             _typeDatabase.Registrar.UpdateDependencies(GetModuleName(), typeRecord.Namespace);
 
             return typeDecl;
@@ -542,6 +547,11 @@ namespace BindingsGeneration
             }
 
             return name;
+        }
+
+        private static string ExtractFullyQualifiedName(string parentName, string name)
+        {
+            return string.IsNullOrEmpty(parentName) ? ExtractUniqueName(name) : $"{parentName}.{ExtractUniqueName(name)}";
         }
 
         /// <summary>

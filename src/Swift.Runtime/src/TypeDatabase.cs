@@ -103,7 +103,7 @@ namespace Swift.Runtime
                 var moduleRecord = Registrar.RegisterModule(moduleName);
                 moduleRecord.Path = "/System/Library/Frameworks/Foundation.framework/Foundation";
 
-                var typeRecord = Registrar.RegisterType(moduleName, swiftTypeIdentifier, swiftMangledName);
+                var typeRecord = Registrar.RegisterType(moduleName, swiftTypeIdentifier);
                 typeRecord.TypeIdentifier = csharpTypeIdentifier;
                 typeRecord.MetadataAccessor = $"{swiftMangledName}Ma";
                 typeRecord.IsProcessed = true;
@@ -112,7 +112,7 @@ namespace Swift.Runtime
             }
 
             // Register AnyType
-            var anyTypeRecord = Registrar.RegisterType("Swift", "AnyType", string.Empty);
+            var anyTypeRecord = Registrar.RegisterType("Swift", "AnyType");
             anyTypeRecord.TypeIdentifier = "AnyType";
             anyTypeRecord.MetadataAccessor = string.Empty;
             anyTypeRecord.IsProcessed = true;
@@ -135,7 +135,7 @@ namespace Swift.Runtime
                 return typeRecord;
 
             // Type not found; register it for lazy-loading
-            typeRecord = Registrar.RegisterType(moduleName, typeIdentifier, string.Empty);
+            typeRecord = Registrar.RegisterType(moduleName, typeIdentifier);
             typeRecord.IsProcessed = false;
 
             return typeRecord;

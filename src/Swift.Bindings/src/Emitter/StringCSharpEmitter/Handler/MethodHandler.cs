@@ -193,7 +193,7 @@ namespace BindingsGeneration
 
             // TODO: Add Indirect result marshalling to methods other than constructors
 
-            var returnPrefix = methodDecl.CSSignature.First().CSTypeIdentifier.Name == "()" ? "" : "return ";
+            var returnPrefix = methodDecl.CSSignature.First().CSTypeIdentifier.Name == "void" ? "" : "return ";
             var invokeArguments = env.SignatureHandler.GetPInvokeSignature().CallArgumentsString();
 
             // Call the PInvoke method

@@ -2,7 +2,7 @@
 <swifttypedatabase version="1.0">
     <entities>
         <entity managedNameSpace="System" managedTypeName="void">
-            <typedeclaration kind="typealias" name="()" module="Swift" frozen="false" blittable ="false" />
+            <typedeclaration kind="typealias" name="()" module="" mangledName="$sytN" frozen="false" blittable ="false" />
         </entity>
         <entity managedNameSpace="System" managedTypeName="Byte">
             <typedeclaration kind="struct" name="UInt8" module="Swift" mangledName="$ss5UInt8V" frozen="true" blittable ="true" />
