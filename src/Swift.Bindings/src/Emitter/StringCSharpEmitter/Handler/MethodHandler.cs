@@ -63,7 +63,10 @@ namespace BindingsGeneration
         {
             var methodEnv = (MethodEnvironment)env;
             EmitWrapper(writer, methodEnv);
-            PInvokeEmitter.EmitPInvoke(writer, methodEnv);
+            if (!methodEnv.SignatureHandler.GetWrapperSignature().ContainsPlaceholder)
+            {
+                PInvokeEmitter.EmitPInvoke(writer, methodEnv);
+            }
             writer.WriteLine();
         }
 
@@ -81,6 +84,14 @@ namespace BindingsGeneration
 
             writer.WriteLine("{");
             writer.Indent++;
+
+            if (methodEnv.SignatureHandler.GetWrapperSignature().ContainsPlaceholder)
+            {
+                writer.WriteLine("throw new NotImplementedException(\"Method signature contains placeholder type.\");");
+                writer.Indent--;
+                writer.WriteLine("}");
+                return;
+            }
 
             var pInvokeName = NameProvider.GetPInvokeName(methodDecl);
 
@@ -161,7 +172,10 @@ namespace BindingsGeneration
             var methodEnv = (MethodEnvironment)env;
 
             EmitWrapperMethod(writer, methodEnv);
-            PInvokeEmitter.EmitPInvoke(writer, methodEnv);
+            if (!methodEnv.SignatureHandler.GetWrapperSignature().ContainsPlaceholder)
+            {
+                PInvokeEmitter.EmitPInvoke(writer, methodEnv);
+            }
             writer.WriteLine();
         }
 
@@ -182,6 +196,14 @@ namespace BindingsGeneration
             writer.WriteLine($"public {staticKeyword}{wrapperSignature.ReturnType} {methodDecl.Name}({wrapperSignature.ParametersString()})");
             writer.WriteLine("{");
             writer.Indent++;
+
+            if (wrapperSignature.ContainsPlaceholder)
+            {
+                writer.WriteLine("throw new NotImplementedException(\"Method signature contains placeholder type.\");");
+                writer.Indent--;
+                writer.WriteLine("}");
+                return;
+            }
 
             if (MarshallingHelpers.MethodRequiresSwiftSelf(methodDecl, parentDecl))
             {
@@ -221,6 +243,7 @@ namespace BindingsGeneration
     /// <param name="Parameters"></param>
     public record Signature(string ReturnType, IReadOnlyList<Parameter> Parameters)
     {
+        public bool ContainsPlaceholder => Parameters.Any(p => p.Type == "AnyType") || ReturnType == "AnyType";
         public string ParametersString() => string.Join(", ", Parameters.Select(p => p.ToString()));
 
         public string CallArgumentsString() => string.Join(", ", Parameters.Select(p =>
@@ -231,7 +254,6 @@ namespace BindingsGeneration
     {
         private string _returnType = "invalid";
         private readonly List<Parameter> _parameters = new();
-
         MethodDecl MethodDecl { get; }
         BaseDecl ParentDecl { get; }
         TypeDatabase TypeDatabase { get; }
@@ -340,14 +362,7 @@ namespace BindingsGeneration
         {
             if (!MarshallingHelpers.MethodRequiresIndirectResult(MethodDecl, ParentDecl, TypeDatabase))
             {
-                var argument = MethodDecl.CSSignature.First();
-                var returnType = argument.CSTypeIdentifier.Name;
-                var typeRecord = MarshallingHelpers.GetType(argument, TypeDatabase.Registrar);
-                if (typeRecord == null || !typeRecord.IsProcessed)
-                {                    
-                    Console.WriteLine($"Method {MethodDecl.Name} has unprocessed return type {returnType}");
-                    returnType = "AnyType";
-                }
+                var returnType = MethodDecl.CSSignature.First().CSTypeIdentifier.Name;
                 SetReturnType(returnType);
             }
             else
