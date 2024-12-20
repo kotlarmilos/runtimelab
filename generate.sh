@@ -7,7 +7,8 @@ usage()
   echo "Common settings:"
   echo "  --platform <value>         Platform: MacOSX, iPhoneOS, iPhoneSimulator, AppleTVOS, AppleTVSimulator"
   echo "  --arch <value>             Architecture: arm64e-apple-macos, x86_64-apple-macos"
-  echo "  --framework                Framework to generate bindings for"
+  echo "  --framework <value>        Framework to generate bindings for"
+  echo "  --configuration <value>    Configuration: Debug, Release"
   echo "  --help                     Print help and exit (short: -h)"
   echo ""
 
@@ -32,6 +33,7 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 platform=''
 arch=''
 frameworks=()
+configuration='Debug'
 experimental=false
 
 output_dir="./GeneratedBindings"
@@ -56,6 +58,10 @@ while [[ $# > 0 ]]; do
       ;;
     -framework)
       frameworks+=("$2")
+      shift
+      ;;
+    -configuration)
+      configuration=$2
       shift
       ;;
   esac
@@ -93,9 +99,12 @@ function ExtractABI {
 function InvokeProjectionTooling {
     local framework=$1
 
-    $scriptroot/dotnet.sh $scriptroot/artifacts/bin/Swift.Bindings/Release/net9.0/Swift.Bindings.dll -a "./$framework.abi.json" -d "/System/Library/Frameworks/$framework.framework/$framework" -o "./"
+    $scriptroot/dotnet.sh $scriptroot/artifacts/bin/Swift.Bindings/$configuration/net9.0/Swift.Bindings.dll -a "./$framework.abi.json" -d "/System/Library/Frameworks/$framework.framework/$framework" -o "./"
 
+    echo ""
+    echo "C# source code for Swift.$framework.cs:"
     cat "./Swift.$framework.cs"
+    echo ""
 
     if $experimental; then
         rm -rf "./Swift.$framework.cs"
@@ -128,6 +137,7 @@ function Generate {
         echo "Processing framework: $framework"
 
         if ExtractABI "$framework"; then
+            echo "Generating bindings for framework '$framework'"
             InvokeProjectionTooling "$framework"
         else
             echo "Skipping framework '$framework' due to errors."
