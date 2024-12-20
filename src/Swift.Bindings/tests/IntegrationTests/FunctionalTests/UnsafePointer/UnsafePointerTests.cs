@@ -8,9 +8,9 @@ using Swift;
 using Swift.Runtime;
 using Swift.UnsafePointerTests;
 
-namespace BindingsGeneration.Tests
+namespace BindingsGeneration.FunctionalTests
 {
-    public class UnsafePointerTests: IClassFixture<UnsafePointerTests.TestFixture>
+    public class UnsafePointerTests : IClassFixture<UnsafePointerTests.TestFixture>
     {
         private readonly TestFixture _fixture;
 
@@ -93,7 +93,7 @@ namespace BindingsGeneration.Tests
                 UnsafeMutableRawPointer _keyPtr = new UnsafeMutableRawPointer(keyPtr);
                 UnsafeMutableRawPointer _noncePtr = new UnsafeMutableRawPointer(noncePtr);
                 UnsafeMutableRawPointer _ciphertextPtr = new UnsafeMutableRawPointer(ciphertextPtr);
-                UnsafeMutableRawPointer _tagPtr = new UnsafeMutableRawPointer (tagPtr);
+                UnsafeMutableRawPointer _tagPtr = new UnsafeMutableRawPointer(tagPtr);
                 UnsafeMutablePointer<Byte> _plaintextPtr = new UnsafeMutablePointer<Byte>(plaintextPtr);
                 UnsafeMutableRawPointer _aadPtr = new UnsafeMutableRawPointer(aadPtr);
 
