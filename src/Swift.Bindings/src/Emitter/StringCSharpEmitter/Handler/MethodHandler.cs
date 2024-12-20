@@ -62,11 +62,14 @@ namespace BindingsGeneration
         public void Emit(IndentedTextWriter writer, IEnvironment env, Conductor conductor)
         {
             var methodEnv = (MethodEnvironment)env;
-            EmitWrapper(writer, methodEnv);
-            if (!methodEnv.SignatureHandler.GetWrapperSignature().ContainsPlaceholder)
+            if (methodEnv.SignatureHandler.GetWrapperSignature().ContainsPlaceholder)
             {
-                PInvokeEmitter.EmitPInvoke(writer, methodEnv);
+                Console.WriteLine($"Method {methodEnv.MethodDecl.Name} has unsupported signature: ({methodEnv.SignatureHandler.GetWrapperSignature().ParametersString()}) -> {methodEnv.SignatureHandler.GetWrapperSignature().ReturnType}");
+                return;
             }
+    
+            EmitWrapper(writer, methodEnv);
+            PInvokeEmitter.EmitPInvoke(writer, methodEnv);
             writer.WriteLine();
         }
 
@@ -84,14 +87,6 @@ namespace BindingsGeneration
 
             writer.WriteLine("{");
             writer.Indent++;
-
-            if (methodEnv.SignatureHandler.GetWrapperSignature().ContainsPlaceholder)
-            {
-                writer.WriteLine("throw new NotImplementedException(\"Method signature contains placeholder type.\");");
-                writer.Indent--;
-                writer.WriteLine("}");
-                return;
-            }
 
             var pInvokeName = NameProvider.GetPInvokeName(methodDecl);
 
@@ -170,12 +165,14 @@ namespace BindingsGeneration
         public void Emit(IndentedTextWriter writer, IEnvironment env, Conductor conductor)
         {
             var methodEnv = (MethodEnvironment)env;
+            if (methodEnv.SignatureHandler.GetWrapperSignature().ContainsPlaceholder)
+            {
+                Console.WriteLine($"Method {methodEnv.MethodDecl.Name} has unsupported signature: ({methodEnv.SignatureHandler.GetWrapperSignature().ParametersString()}) -> {methodEnv.SignatureHandler.GetWrapperSignature().ReturnType}");
+                return;
+            }
 
             EmitWrapperMethod(writer, methodEnv);
-            if (!methodEnv.SignatureHandler.GetWrapperSignature().ContainsPlaceholder)
-            {
-                PInvokeEmitter.EmitPInvoke(writer, methodEnv);
-            }
+            PInvokeEmitter.EmitPInvoke(writer, methodEnv);
             writer.WriteLine();
         }
 
@@ -188,22 +185,13 @@ namespace BindingsGeneration
         {
             var methodDecl = (MethodDecl)env.MethodDecl;
             var parentDecl = methodDecl.ParentDecl ?? throw new ArgumentNullException(nameof(methodDecl.ParentDecl));
-            var wrapperSignature = env.SignatureHandler.GetWrapperSignature();
 
             var pInvokeName = NameProvider.GetPInvokeName(methodDecl);
             var staticKeyword = methodDecl.MethodType == MethodType.Static || parentDecl is ModuleDecl ? "static " : "";
 
-            writer.WriteLine($"public {staticKeyword}{wrapperSignature.ReturnType} {methodDecl.Name}({wrapperSignature.ParametersString()})");
+            writer.WriteLine($"public {staticKeyword}{env.SignatureHandler.GetWrapperSignature().ReturnType} {methodDecl.Name}({env.SignatureHandler.GetWrapperSignature().ParametersString()})");
             writer.WriteLine("{");
             writer.Indent++;
-
-            if (wrapperSignature.ContainsPlaceholder)
-            {
-                writer.WriteLine("throw new NotImplementedException(\"Method signature contains placeholder type.\");");
-                writer.Indent--;
-                writer.WriteLine("}");
-                return;
-            }
 
             if (MarshallingHelpers.MethodRequiresSwiftSelf(methodDecl, parentDecl))
             {

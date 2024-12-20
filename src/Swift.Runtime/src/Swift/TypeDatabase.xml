@@ -44,10 +44,10 @@
             <typedeclaration kind="struct" name="Bool" module="Swift" mangledName="$sSb" frozen="true" blittable ="true" />
         </entity>
         <entity managedNameSpace="Swift.Runtime" managedTypeName="UnsafePointer">
-            <typedeclaration kind="struct" name="UnsafePointer" module="Swift" mangledName="sSP" frozen="true" blittable ="true" />
+            <typedeclaration kind="struct" name="UnsafePointer`1" module="Swift" mangledName="sSP" frozen="true" blittable ="true" />
         </entity>
         <entity managedNameSpace="Swift.Runtime" managedTypeName="UnsafeMutablePointer">
-            <typedeclaration kind="struct" name="UnsafeMutablePointer" module="Swift" mangledName="sSp" frozen="true" blittable ="true" />
+            <typedeclaration kind="struct" name="UnsafeMutablePointer`1" module="Swift" mangledName="sSp" frozen="true" blittable ="true" />
         </entity>
         <entity managedNameSpace="Swift.Runtime" managedTypeName="UnsafeRawPointer">
             <typedeclaration kind="struct" name="UnsafeRawPointer" module="Swift" mangledName="sSV" frozen="true" blittable ="true"/>
@@ -56,10 +56,10 @@
             <typedeclaration kind="struct" name="UnsafeMutableRawPointer" module="Swift" mangledName="sSv" frozen="true" blittable ="true"/>
         </entity>
         <entity managedNameSpace="Swift.Runtime" managedTypeName="UnsafeBufferPointer">
-            <typedeclaration kind="struct" name="UnsafeBufferPointer" module="Swift" mangledName="sSR" frozen="true" blittable ="true"/>
+            <typedeclaration kind="struct" name="UnsafeBufferPointer`1" module="Swift" mangledName="sSR" frozen="true" blittable ="true"/>
         </entity>
         <entity managedNameSpace="Swift.Runtime" managedTypeName="UnsafeMutableBufferPointer">
-            <typedeclaration kind="struct" name="UnsafeMutableBufferPointer" module="Swift" mangledName="sSr" frozen="true" blittable ="true"/>
+            <typedeclaration kind="struct" name="UnsafeMutableBufferPointer`1" module="Swift" mangledName="sSr" frozen="true" blittable ="true"/>
         </entity>
         <entity managedNameSpace="Swift.Runtime" managedTypeName="UnsafeRawBufferPointer">
             <typedeclaration kind="struct" name="UnsafeRawBufferPointer" module="Swift" mangledName="sSW" frozen="true" blittable ="true"/>

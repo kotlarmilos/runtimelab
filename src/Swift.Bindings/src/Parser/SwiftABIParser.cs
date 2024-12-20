@@ -164,14 +164,6 @@ namespace BindingsGeneration
             var declarations = new List<BaseDecl>();
             foreach (var node in nodes)
             {
-                // Skip generic types
-                if (node.GenericSig != null)
-                {
-                    if (_verbose > 1)
-                        Console.WriteLine($"Generic type '{node.Name}' encountered. Skipping.");
-                    continue;
-                }
-
                 var nodeDeclaration = HandleNode(node, parentDecl, moduleDecl);
                 if (nodeDeclaration != null)
                     declarations.Add(nodeDeclaration);
@@ -252,6 +244,13 @@ namespace BindingsGeneration
             TypeDecl? decl = null;
             TypeRecord typeRecord = _typeDatabase.Registrar.RegisterType(node.ModuleName, ExtractFullyQualifiedName(parentDecl.FullyQualifiedName, node.Name));
             IntPtr metadataPtr;
+
+            if (node.GenericSig != null)
+            {
+                if (_verbose > 1)
+                    Console.WriteLine($"Generic type '{node.Name}' not supported. Skipping.");
+                return null;
+            }
 
             switch (node.DeclKind)
             {

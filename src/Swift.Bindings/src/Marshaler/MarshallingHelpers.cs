@@ -38,22 +38,18 @@ namespace BindingsGeneration
             return typeRecord.IsFrozen && typeRecord.IsBlittable;
         }
 
-        public static TypeRecord? GetType(ArgumentDecl argumentDecl, TypeRegistrar typeRegistrar)
+        public static TypeRecord GetType(ArgumentDecl argumentDecl, TypeRegistrar typeRegistrar)
         {
-            if (argumentDecl.SwiftTypeSpec is NamedTypeSpec namedTypeSpec)
+            switch (argumentDecl.SwiftTypeSpec)
             {
-                var typeRecord = typeRegistrar.GetType(namedTypeSpec.Module, namedTypeSpec.NameWithoutModule);
-                return typeRecord;
+                case NamedTypeSpec namedTypeSpec:
+                    string typeIdentifier = namedTypeSpec.GenericParameters.Count > 0 ? $"{namedTypeSpec.NameWithoutModule}`{namedTypeSpec.GenericParameters.Count}" : namedTypeSpec.NameWithoutModule;
+                    return typeRegistrar.GetType(namedTypeSpec.Module, typeIdentifier) ?? throw new NotImplementedException($"Type ${argumentDecl} not found in type database");
+                case TupleTypeSpec tupleTypeSpec:
+                    return typeRegistrar.GetType(string.Empty, tupleTypeSpec.ToString(true)) ?? throw new NotImplementedException($"Type ${argumentDecl} not found in type database");
+                default:
+                    throw new NotImplementedException($"{argumentDecl} is not supported");
             }
-
-            if (argumentDecl.SwiftTypeSpec is TupleTypeSpec tupleTypeSpec)
-            {
-                // Void is an empty tuple
-                var typeRecord = typeRegistrar.GetType(string.Empty, tupleTypeSpec.ToString(true));
-                return typeRecord;
-            }
-
-            throw new NotImplementedException($"{argumentDecl} is not a NamedTypeSpec nor TupleTypeSpec");
         }
     }
 }
