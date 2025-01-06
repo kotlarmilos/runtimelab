@@ -72,14 +72,14 @@ namespace Swift.Runtime
 		/// Given an instance of a valid single payload enum whose type is represented by
 		/// metadata, get the tag of the enum.
 		/// </summary>
-		public delegate* unmanaged<void *, nuint, TypeMetadata, nuint> GetEnumTagSinglePayload;
+		public delegate* unmanaged<void *, uint, TypeMetadata, uint> GetEnumTagSinglePayload;
 
 		/// <summary>
 		/// void StoreEnumTagSinglePayload (enum, whichCase, emptyCases, metadata)
 		/// Given uninitialized memory for an instance of a single payload enum with a payload
 		/// whose is represented by metadata, store the tag.
 		/// </summary>
-		public delegate* unmanaged<void *, nuint, nuint, TypeMetadata, void> StoreEnumTagSinglePayload;
+		public delegate* unmanaged<void *, uint, uint, TypeMetadata, void> StoreEnumTagSinglePayload;
 
 		/// <summary>
 		/// The size of the type in bytes.
@@ -106,7 +106,7 @@ namespace Swift.Runtime
 		/// case with a payload and continue in declaration order. Then they are followed by
 		/// cases without payloads in declaration order.
 		/// </summary>
-		public delegate* unmanaged<void *, TypeMetadata, nuint> GetEnumTag;
+		public delegate* unmanaged<void *, TypeMetadata, uint> GetEnumTag;
 
 		/// <summary>
 		/// Strips out the tag information from a given enumeration leaving the value behind.
@@ -117,7 +117,7 @@ namespace Swift.Runtime
 		/// <summary>
 		/// Injects a tag into an enumeration. This is useful when creating an enum.
 		/// </summary>
-		public delegate* unmanaged<void *, nuint, TypeMetadata, void> DestructiveInjectEnumTag;
+		public delegate* unmanaged<void *, uint, TypeMetadata, void> DestructiveInjectEnumTag;
 
 		/// <summary>
 		/// Returns the alignment of the type in bytes.

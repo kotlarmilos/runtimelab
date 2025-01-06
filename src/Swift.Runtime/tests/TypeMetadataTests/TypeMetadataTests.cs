@@ -75,6 +75,16 @@ public class TypeMetadataTests : IClassFixture<TypeMetadataTests.TestFixture>
             }
             return TypeMetadata.Zero;
         }
+
+        IntPtr ISwiftObject.MarshalToSwift(IntPtr swiftDest)
+        {
+            return swiftDest;
+        }
+
+        static ISwiftObject ISwiftObject.NewFromPayload(IntPtr payload)
+        {
+            return new ThisOnlyGetsUsedHere();
+        }
     }
 
     [Fact]
