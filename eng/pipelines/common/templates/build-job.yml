@@ -6,6 +6,9 @@ parameters:
   pool: {}
   isOfficialBuild: false
   runTests: true
+  bindings:
+    isBindingsBuild: false
+    scriptArgs: ''
 
 jobs:
 
@@ -50,6 +53,10 @@ jobs:
                 $(_testBuildArg)
                 /p:TargetPlatform=${{ parameters.archType }}
         displayName: Build and Test
+
+      - ${{ if and(eq(parameters.bindings.isBindingsBuild, true), ne(parameters.osGroup, 'Windows_NT')) }}:
+        - script: ./generate.sh --configuration $(_BuildConfig) ${{ parameters.bindings.scriptArgs }}
+          displayName: Generate Bindings
 
       - ${{ if eq(parameters.isOfficialBuild, true) }}:
         - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
