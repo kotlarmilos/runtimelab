@@ -55,33 +55,33 @@ public struct NonFrozenStruct
     }
 }
 
-// @frozen 
-// public struct FrozenStructWithNonFrozenMember
-// {
-//     public var x: FrozenStruct
-//     public var y: NonFrozenStruct
+@frozen
+public struct FrozenStructWithNonFrozenMember
+{
+    public var x: FrozenStruct
+    public var y: NonFrozenStruct
 
-//     public init(x: FrozenStruct, y: NonFrozenStruct)
-//     {
-//         self.x = x
-//         self.y = y
-//     }
+    public init(x: FrozenStruct, y: NonFrozenStruct)
+    {
+        self.x = x
+        self.y = y
+    }
 
-//     public func getX() -> FrozenStruct
-//     {
-//         return x
-//     }
+    public func getX() -> FrozenStruct
+    {
+        return x
+    }
 
-//     public func getY() -> NonFrozenStruct
-//     {
-//         return y
-//     }
+    public func getY() -> NonFrozenStruct
+    {
+        return y
+    }
 
-//     public func sum(a: NonFrozenStruct, b: FrozenStruct) -> Int
-//     {
-//         return x.sum() + y.sum() + a.sum() + b.sum()
-//     }
-// }
+    public func sum() -> Int
+    {
+        return x.sum() + y.sum()
+    }
+}
 
 public struct NonFrozenStructWithNonFrozenMember
 {
@@ -107,6 +107,31 @@ public struct NonFrozenStructWithNonFrozenMember
     public func sum() -> Int
     {
         return x.sum() + y.sum()
+    }
+}
+
+@frozen
+public struct FrozenStructWithNonFrozenMemberDeclaredWithinTheStruct
+{
+    public struct InnerStruct {
+        public var innerField: Int
+
+        public init(val: Int)
+        {
+            self.innerField = val
+        }
+    }
+
+    public var x: InnerStruct
+
+    public init(x: InnerStruct)
+    {
+        self.x = x
+    }
+
+    public func getInnerFieldValue() -> Int
+    {
+        return x.innerField
     }
 }
 

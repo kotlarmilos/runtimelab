@@ -1,12 +1,10 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 using System.Collections.Concurrent;
+using Swift.Runtime;
 
-namespace Swift.Runtime
+namespace BindingsGeneration
 {
     /// <summary>
     /// Represents a Swift module in C#.
@@ -98,6 +96,7 @@ namespace Swift.Runtime
             });
         }
 
+        // TODO: Remove this method
         /// <summary>
         /// Registers a type with the specified module and type name.
         /// </summary>
@@ -117,6 +116,18 @@ namespace Swift.Runtime
                 IsBlittable = false,
                 IsFrozen = false
             });
+        }
+
+        /// <summary>
+        /// Registers a type with the specified module and type name.
+        /// </summary>
+        /// <param name="moduleName">The Swift module name.</param>
+        /// <param name="typeIdentifier">The Swift type name.</param>
+        /// <param name="record">The type record.</param>
+        public void RegisterType(string moduleName, string typeIdentifier, TypeRecord record)
+        {
+            var moduleRecord = RegisterModule(moduleName);
+            moduleRecord.TypeRecords.AddOrUpdate(typeIdentifier, record, (_, _) => record);
         }
 
         /// <summary>

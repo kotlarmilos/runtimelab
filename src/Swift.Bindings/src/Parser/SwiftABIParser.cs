@@ -24,7 +24,7 @@ namespace BindingsGeneration
         public required string Kind { get; set; }
         public required string Name { get; set; }
         public required string PrintedName { get; set; }
-        public required IEnumerable<Node> Children { get; set; }
+        public required IEnumerable<Node> Children { get; set; } = Enumerable.Empty<Node>();
     }
 
     /// <summary>
@@ -43,7 +43,7 @@ namespace BindingsGeneration
         public required bool? IsInternal { get; set; }
         public required string? GenericSig { get; set; }
         public required string? sugared_genericSig { get; set; }
-        public required IEnumerable<Node> Children { get; set; }
+        public required IEnumerable<Node> Children { get; set; } = Enumerable.Empty<Node>();
     }
 
     /// <summary>
@@ -99,6 +99,8 @@ namespace BindingsGeneration
         /// </summary>
         private readonly ABIRootNode _moduleRoot;
 
+        private readonly Dictionary<NamedTypeSpec, TypeDecl> _moduleTypes = new();
+
         public SwiftABIParser(string filePath, string dylibPath, TypeDatabase typeDatabase, int verbose = 0)
         {
             _filePath = filePath;
@@ -120,20 +122,20 @@ namespace BindingsGeneration
         }
 
         /// <summary>
-        /// Gets the module declaration from the ABI file.
+        /// Processes the module ABI. Processes all declarations and builds the ModuleDecl.
         /// </summary>
-        /// <returns>The module declaration.</returns>
-        public ModuleDecl GetModuleDecl()
+        /// <returns>The module ABI processing result.</returns>
+        public ModuleParsingResult ParseModule()
         {
             var dependencies = new List<string>();
             var moduleName = GetModuleName();
             var moduleDecl = new ModuleDecl
             {
                 Name = ExtractUniqueName(moduleName),
-                FullyQualifiedName = string.Empty,
+                FullyQualifiedName = ExtractUniqueName(moduleName),
                 Fields = new List<FieldDecl>(),
                 Methods = new List<MethodDecl>(),
-                Declarations = new List<BaseDecl>(),
+                Types = new List<TypeDecl>(),
                 Dependencies = dependencies,
                 ParentDecl = null,
                 ModuleDecl = null
@@ -146,10 +148,15 @@ namespace BindingsGeneration
 
             moduleDecl.Fields = decls.OfType<FieldDecl>().ToList();
             moduleDecl.Methods = decls.OfType<MethodDecl>().ToList();
-            moduleDecl.Declarations = decls.Where(d => !(d is MethodDecl) && !(d is FieldDecl)).ToList();
+            moduleDecl.Types = decls.OfType<TypeDecl>().ToList();
             moduleDecl.Dependencies = dependencies;
 
-            return moduleDecl;
+            foreach (var type in moduleDecl.Types)
+            {
+                _moduleTypes.Add(new NamedTypeSpec(type.FullyQualifiedName), type);
+            }
+
+            return new ModuleParsingResult(moduleDecl, _moduleTypes);
         }
 
         /// <summary>
@@ -165,7 +172,7 @@ namespace BindingsGeneration
             foreach (var node in nodes)
             {
                 var nodeDeclaration = HandleNode(node, parentDecl, moduleDecl);
-                if (nodeDeclaration != null)
+                if (nodeDeclaration is not null)
                     declarations.Add(nodeDeclaration);
             }
             return declarations;
@@ -195,7 +202,7 @@ namespace BindingsGeneration
                         break;
                     case "Var":
                         // TODO: Implement computed properties
-                        if (node.DeclAttributes != null && Array.IndexOf(node.DeclAttributes, "HasStorage") != -1)
+                        if (node.DeclAttributes is not null && Array.IndexOf(node.DeclAttributes, "HasStorage") != -1)
                             result = CreateFieldDecl(node, parentDecl, moduleDecl);
                         break;
                     case "Import":
@@ -241,11 +248,9 @@ namespace BindingsGeneration
                 return null;
             }
 
-            TypeDecl? decl = null;
-            TypeRecord typeRecord = _typeDatabase.Registrar.RegisterType(node.ModuleName, ExtractFullyQualifiedName(parentDecl.FullyQualifiedName, node.Name));
-            IntPtr metadataPtr;
+            TypeDecl? decl;
 
-            if (node.GenericSig != null)
+            if (node.GenericSig is not null)
             {
                 if (_verbose > 1)
                     Console.WriteLine($"Generic type '{node.Name}' not supported. Skipping.");
@@ -256,16 +261,8 @@ namespace BindingsGeneration
             {
                 case "Struct":
                 case "Enum":
-                    // TODO: fix this code to not use static metadata objects if possible
-                    metadataPtr = DynamicLibraryLoader.invoke(_dylibPath, GetMetadataAccessor(node));
-                    var swiftTypeInfo = new SwiftTypeInfo { MetadataPtr = metadataPtr };
-
-                    // TODO: Find better place for this
-                    typeRecord.IsBlittable = !swiftTypeInfo.ValueWitnessTable->IsNonPOD || !swiftTypeInfo.ValueWitnessTable->IsNonBitwiseTakable; //TODO: This is not the full picture.
-                    typeRecord.IsFrozen = node.DeclAttributes != null && Array.IndexOf(node.DeclAttributes, "Frozen") != -1;
-
-                    decl = CreateStructDecl(node, parentDecl, moduleDecl, typeRecord.IsFrozen, typeRecord.IsBlittable);
-                    typeRecord.SwiftTypeInfo = swiftTypeInfo;
+                    var hasFrozenAttribute = node.DeclAttributes is not null && Array.IndexOf(node.DeclAttributes, "Frozen") != -1;
+                    decl = CreateStructDecl(node, parentDecl, moduleDecl, hasFrozenAttribute);
                     break;
 
                 case "Class":
@@ -278,13 +275,17 @@ namespace BindingsGeneration
                     return null;
             }
 
-            typeRecord.IsProcessed = true;
-
-            if (node.Children != null && decl != null)
+            if (decl is not null)
             {
                 var childDecls = CollectDeclarations(node.Children, decl, moduleDecl);
                 decl.Fields.AddRange(childDecls.OfType<FieldDecl>());
-                decl.Declarations.AddRange(childDecls.Where(d => !(d is FieldDecl)));
+                decl.Methods.AddRange(childDecls.OfType<MethodDecl>());
+                decl.Types.AddRange(childDecls.OfType<TypeDecl>());
+
+                foreach (var type in decl.Types)
+                {
+                    _moduleTypes.Add(new NamedTypeSpec(type.FullyQualifiedName), type);
+                }
             }
 
             return decl;
@@ -297,7 +298,7 @@ namespace BindingsGeneration
         /// <param name="parentDecl">The parent declaration.</param>
         /// <param name="moduleDecl">The module declaration.</param>
         /// <returns>The struct declaration.</returns>
-        private StructDecl CreateStructDecl(Node node, BaseDecl parentDecl, BaseDecl moduleDecl, bool IsFrozen, bool IsBlittable)
+        private StructDecl CreateStructDecl(Node node, BaseDecl parentDecl, BaseDecl moduleDecl, bool hasFrozenAttribute)
         {
             return new StructDecl
             {
@@ -305,11 +306,12 @@ namespace BindingsGeneration
                 FullyQualifiedName = ExtractFullyQualifiedName(parentDecl.FullyQualifiedName, node.Name),
                 MangledName = node.MangledName,
                 Fields = new List<FieldDecl>(),
-                Declarations = new List<BaseDecl>(),
+                Methods = new List<MethodDecl>(),
+                Types = new List<TypeDecl>(),
                 ParentDecl = parentDecl,
                 ModuleDecl = moduleDecl,
-                IsFrozen = IsFrozen,
-                IsBlittable = IsBlittable
+                IsFrozen = hasFrozenAttribute,
+                IsBlittable = false,
             };
         }
 
@@ -328,7 +330,8 @@ namespace BindingsGeneration
                 FullyQualifiedName = ExtractFullyQualifiedName(parentDecl.FullyQualifiedName, node.Name),
                 MangledName = node.MangledName,
                 Fields = new List<FieldDecl>(),
-                Declarations = new List<BaseDecl>(),
+                Methods = new List<MethodDecl>(),
+                Types = new List<TypeDecl>(),
                 ParentDecl = parentDecl,
                 ModuleDecl = moduleDecl
             };
@@ -360,24 +363,21 @@ namespace BindingsGeneration
                 ModuleDecl = moduleDecl
             };
 
-            if (node.Children != null)
+            for (int i = 0; i < node.Children.Count(); i++)
             {
-                for (int i = 0; i < node.Children.Count(); i++)
+                var typeDecl = CreateTypeDecl(node.Children.ElementAt(i), methodDecl, moduleDecl);
+                var typeSpec = CreateTypeSpec(node.Children.ElementAt(i));
+                methodDecl.CSSignature.Add(new ArgumentDecl
                 {
-                    var typeDecl = CreateTypeDecl(node.Children.ElementAt(i), methodDecl, moduleDecl);
-                    var typeSpec = CreateTypeSpec(node.Children.ElementAt(i));
-                    methodDecl.CSSignature.Add(new ArgumentDecl
-                    {
-                        CSTypeIdentifier = typeDecl,
-                        SwiftTypeSpec = typeSpec,
-                        Name = paramNames[i],
-                        FullyQualifiedName = string.Empty,
-                        PrivateName = string.Empty,
-                        IsInOut = false,
-                        ParentDecl = methodDecl,
-                        ModuleDecl = moduleDecl
-                    });
-                }
+                    CSTypeIdentifier = typeDecl,
+                    SwiftTypeSpec = typeSpec,
+                    Name = paramNames[i],
+                    FullyQualifiedName = string.Empty,
+                    PrivateName = string.Empty,
+                    IsInOut = false,
+                    ParentDecl = methodDecl,
+                    ModuleDecl = moduleDecl
+                });
             }
 
             return methodDecl;
@@ -402,7 +402,8 @@ namespace BindingsGeneration
                 FullyQualifiedName = ExtractFullyQualifiedName(parentDecl.FullyQualifiedName, node.Name),
                 Visibility = node.IsInternal ?? false ? Visibility.Private : Visibility.Public,
                 ParentDecl = parentDecl,
-                ModuleDecl = moduleDecl
+                ModuleDecl = moduleDecl,
+                IsStatic = node.@static ?? false
             };
             typeDecl.ParentDecl = fieldDecl;
             return fieldDecl;
@@ -468,7 +469,8 @@ namespace BindingsGeneration
                 FullyQualifiedName = string.Empty,
                 MangledName = node.MangledName,
                 Fields = new List<FieldDecl>(),
-                Declarations = new List<BaseDecl>(),
+                Methods = new List<MethodDecl>(),
+                Types = new List<TypeDecl>(),
                 ParentDecl = parentDecl,
                 ModuleDecl = moduleDecl
             };
@@ -476,7 +478,7 @@ namespace BindingsGeneration
             TypeRecord typeRecord;
             string moduleName = node.PrintedName.IndexOf('.') > -1 ? node.PrintedName.Substring(0, node.PrintedName.IndexOf('.')) : string.Empty;
             // If the node has children, it is a generic type
-            if (node.Children != null && node.Children.Any())
+            if (node.Children.Any())
             {
                 typeRecord = _typeDatabase.GetTypeMapping(moduleName, $"{node.Name}`{node.Children.Count()}");
                 typeDecl.Name = typeRecord.TypeIdentifier.Replace($"`{node.Children.Count()}", "") + "<";
@@ -484,7 +486,7 @@ namespace BindingsGeneration
                 for (int i = 0; i < node.Children.Count(); i++)
                 {
                     var child = CreateTypeDecl(node.Children.ElementAt(i), typeDecl, moduleDecl);
-                    typeDecl.Declarations.Add(child);
+                    typeDecl.Types.Add(child);
                     if (i > 0)
                         typeDecl.Name += ", ";
                     typeDecl.Name += child.Name;
@@ -575,19 +577,6 @@ namespace BindingsGeneration
                 return mangledName.Substring(0, mangledName.Length - 1) + "C";
             }
             return mangledName;
-        }
-
-        /// <summary>
-        /// Gets the metadata accessor for a given node.
-        /// </summary>
-        /// <param name="node">The node to get the metadata accessor for.</param>
-        /// <returns>The metadata accessor.</returns>
-        private string GetMetadataAccessor(Node node)
-        {
-            if (node.GenericSig == null)
-                return $"{node.MangledName}Ma";
-            else
-                return node.MangledName;
         }
     }
 }
