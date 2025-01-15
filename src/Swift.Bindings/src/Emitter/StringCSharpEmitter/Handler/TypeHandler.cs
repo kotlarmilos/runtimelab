@@ -67,6 +67,9 @@ namespace BindingsGeneration
             var moduleDecl = structDecl.ModuleDecl ?? throw new ArgumentNullException(nameof(structDecl.ParentDecl));
             // Retrieve type info from the type database
             var typeRecord = env.TypeDatabase.GetTypeRecordOrThrow(moduleDecl.Name, structDecl.FullyQualifiedNameWithoutModule);
+
+            var ISwiftObjectMethodWriter = new ISwiftObjectMethodWriter(writer, env.TypeDatabase, moduleDecl, structDecl);
+
             SwiftTypeInfo? swiftTypeInfo = typeRecord?.SwiftTypeInfo;
 
             if (swiftTypeInfo.HasValue)
@@ -78,7 +81,7 @@ namespace BindingsGeneration
                     writer.WriteLine($"[StructLayout(LayoutKind.Sequential, Size = {swiftTypeInfo.Value.ValueWitnessTable->Size})]");
                 }
             }
-            writer.WriteLine($"public unsafe struct {structDecl.Name} {{");
+            writer.WriteLine($"public unsafe struct {structDecl.Name} : {typeof(ISwiftObject).Name} {{");
             writer.Indent++;
 
             // Emit each field in the struct
@@ -96,6 +99,8 @@ namespace BindingsGeneration
                 // }
             }
             writer.WriteLine();
+
+            ISwiftObjectMethodWriter.WriteFrozenStructImplementation();
 
             base.HandleBaseDecl(writer, structDecl.Types, conductor, env.TypeDatabase);
             base.HandleBaseDecl(writer, structDecl.Methods, conductor, env.TypeDatabase);
@@ -193,15 +198,19 @@ namespace BindingsGeneration
             var structDecl = (StructDecl)structEnv.TypeDecl;
             var moduleDecl = structDecl.ModuleDecl ?? throw new ArgumentNullException(nameof(structDecl.ModuleDecl));
 
-            writer.WriteLine($"public unsafe class {structDecl.Name} : IDisposable");
+            var ISwiftObjectMethodWriter = new ISwiftObjectMethodWriter(writer, env.TypeDatabase, moduleDecl, structDecl);
+
+            writer.WriteLine($"public unsafe class {structDecl.Name} : IDisposable, {typeof(ISwiftObject).Name}");
             writer.WriteLine("{");
             writer.Indent++;
 
-            WritePrivateFields(writer);
-            WriteDisposeMethod(writer, structDecl.Name);
-            WriteFinalizer(writer, structDecl.Name);
+            WritePrivateFields(writer, structDecl);
+            WriteDisposeMethod(writer);
+            WriteFinalizer(writer, structDecl);
+            WritePayloadSize(writer);
             WritePayload(writer);
-            WriteMetadata(writer, moduleDecl.Name, structDecl.MangledName, env.TypeDatabase);
+
+            ISwiftObjectMethodWriter.WriteNonFrozenStructImplementation();
 
             writer.WriteLine();
 
@@ -210,23 +219,25 @@ namespace BindingsGeneration
 
             writer.Indent--;
             writer.WriteLine("}");
+            writer.WriteLine();
         }
 
         /// <summary>
         /// Writes the private fields for the class.
         /// </summary>
-        private static void WritePrivateFields(IndentedTextWriter writer)
+        private static void WritePrivateFields(IndentedTextWriter writer, StructDecl structDecl)
         {
             writer.WriteLine();
-            writer.WriteLine("private static nuint _payloadSize = Metadata.Size;");
-            writer.WriteLine("private SwiftHandle _payload = SwiftHandle.Zero;");
-            writer.WriteLine("private bool _disposed = false;");
+            writer.WriteLine($"static nuint _payloadSize = SwiftObjectHelper<{structDecl.Name}>.GetTypeMetadata().Size;");
+            writer.WriteLine("SwiftHandle _payload = SwiftHandle.Zero;");
+            writer.WriteLine("bool _disposed = false;");
+            writer.WriteLine();
         }
 
         /// <summary>
         /// Writes the Dispose method for the class.
         /// </summary>
-        private static void WriteDisposeMethod(IndentedTextWriter writer, string className)
+        private static void WriteDisposeMethod(IndentedTextWriter writer)
         {
             writer.WriteLine("public void Dispose()");
             writer.WriteLine("{");
@@ -242,33 +253,31 @@ namespace BindingsGeneration
             writer.WriteLine("}");
             writer.Indent--;
             writer.WriteLine("}");
+            writer.WriteLine();
         }
 
         /// <summary>
         /// Writes the finalizer for the class.
         /// </summary>
-        private static void WriteFinalizer(IndentedTextWriter writer, string className)
+        private static void WriteFinalizer(IndentedTextWriter writer, StructDecl structDecl)
         {
-            writer.WriteLine($"~{className}()");
+            writer.WriteLine($"~{structDecl.Name}()");
             writer.WriteLine("{");
             writer.Indent++;
             writer.WriteLine("NativeMemory.Free((void*)_payload);");
             writer.WriteLine("_payload = SwiftHandle.Zero;");
             writer.Indent--;
             writer.WriteLine("}");
+            writer.WriteLine();
         }
 
         /// <summary>
-        /// Writes the metadata for the class.
+        /// Writes the payload size accessor for the class.
         /// </summary>
-        private static void WriteMetadata(IndentedTextWriter writer, string moduleName, string mangledName, ITypeDatabase typeDatabase)
+        private static void WritePayloadSize(IndentedTextWriter writer)
         {
-            writer.WriteLine("public static TypeMetadata Metadata => PInvoke_getMetadata();");
-
-            writer.WriteLine("[UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]");
-            string libPath = typeDatabase.GetLibraryPath(moduleName);
-            writer.WriteLine($"[DllImport(\"{libPath}\", EntryPoint = \"{mangledName}Ma\")]");
-            writer.WriteLine("internal static extern TypeMetadata PInvoke_getMetadata();");
+            writer.WriteLine("public static nuint PayloadSize => _payloadSize;");
+            writer.WriteLine();
         }
 
         /// <summary>
@@ -277,6 +286,7 @@ namespace BindingsGeneration
         private static void WritePayload(IndentedTextWriter writer)
         {
             writer.WriteLine("public SwiftHandle Payload => _payload;");
+            writer.WriteLine();
         }
     }
 
@@ -346,6 +356,113 @@ namespace BindingsGeneration
 
             writer.Indent--;
             writer.WriteLine("}");
+            writer.WriteLine();
+        }
+    }
+
+    /// <summary>
+    /// Class responsible for emitting the necessary code for ISwiftObject methods.
+    /// </summary>
+    class ISwiftObjectMethodWriter
+    {
+        private readonly IndentedTextWriter _writer;
+        private readonly ITypeDatabase _typeDatabase;
+        private readonly ModuleDecl _moduleDecl;
+        private readonly StructDecl _structDecl;
+
+        public ISwiftObjectMethodWriter(IndentedTextWriter writer, ITypeDatabase typeDatabase, ModuleDecl moduleDecl, StructDecl structDecl)
+        {
+            _writer = writer;
+            _typeDatabase = typeDatabase;
+            _moduleDecl = moduleDecl;
+            _structDecl = structDecl;
+        }
+
+        /// <summary>
+        /// Writes the implementation for ISwiftObject methods for non-frozen structs.
+        /// </summary>
+        public void WriteNonFrozenStructImplementation()
+        {
+            WriteGetTypeMetadata();
+            WriteNewFromPayloadNonFrozenStruct();
+            WriteMarshalToSwift();
+        }
+
+        /// <summary>
+        /// Writes the implementation for ISwiftObject methods for frozen structs.
+        /// </summary>
+        public void WriteFrozenStructImplementation()
+        {
+            WriteGetTypeMetadata();
+            WriteNewFromPayloadFrozenStruct();
+            WriteMarshalToSwift();
+        }
+
+        /// <summary>
+        /// Writes the GetTypeMetadata method for the struct along with the PInvoke method.
+        /// </summary>
+        private void WriteGetTypeMetadata()
+        {
+            _writer.WriteLine("static TypeMetadata ISwiftObject.GetTypeMetadata() => PInvoke_getMetadata();");
+
+            _writer.WriteLine("[UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]");
+            string libPath = _typeDatabase.GetLibraryPath(_moduleDecl.Name);
+            _writer.WriteLine($"[DllImport(\"{libPath}\", EntryPoint = \"{_structDecl.MangledName}Ma\")]");
+            _writer.WriteLine("internal static extern TypeMetadata PInvoke_getMetadata();");
+            _writer.WriteLine();
+        }
+
+        /// <summary>
+        /// Writes the NewFromPayload method for the struct.
+        /// </summary>
+        private void WriteNewFromPayloadFrozenStruct()
+        {
+            _writer.WriteLine("static ISwiftObject ISwiftObject.NewFromPayload(SwiftHandle handle)");
+            _writer.WriteLine("{");
+            _writer.Indent++;
+            _writer.WriteLine($"return *({_structDecl.Name}*)handle;");
+            _writer.Indent--;
+            _writer.WriteLine("}");
+            _writer.WriteLine();
+        }
+
+        /// <summary>
+        /// Writes the NewFromPayload method for the struct.
+        /// </summary>
+        private void WriteNewFromPayloadNonFrozenStruct()
+        {
+            _writer.WriteLine("static ISwiftObject ISwiftObject.NewFromPayload(SwiftHandle handle)");
+            _writer.WriteLine("{");
+            _writer.Indent++;
+            _writer.WriteLine($"return new {_structDecl.Name}(handle);");
+            _writer.Indent--;
+            _writer.WriteLine("}");
+            _writer.WriteLine();
+
+            EmitPrivateConstructor();
+        }
+
+        /// <summary>
+        /// Writes the private constructor accepting a SwiftHandle.
+        /// </summary>
+        private void EmitPrivateConstructor()
+        {
+            _writer.WriteLine($"unsafe {_structDecl.Name}(SwiftHandle handle)");
+            _writer.WriteLine("{");
+            _writer.Indent++;
+            _writer.WriteLine("_payload = handle;");
+            _writer.Indent--;
+            _writer.WriteLine("}");
+            _writer.WriteLine();
+        }
+
+        /// <summary>
+        /// Writes the MarshalToSwift method for the struct.
+        /// </summary>
+        private void WriteMarshalToSwift()
+        {
+            _writer.WriteLine("IntPtr ISwiftObject.MarshalToSwift(IntPtr swiftDest) => throw new NotImplementedException();");
+            _writer.WriteLine();
         }
     }
 }
