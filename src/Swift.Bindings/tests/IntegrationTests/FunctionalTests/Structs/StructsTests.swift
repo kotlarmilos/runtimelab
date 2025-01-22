@@ -218,3 +218,22 @@ public func createNonFrozenStruct(a: Int, b: Int) -> NonFrozenStruct
 {
     return NonFrozenStruct(x: a, y: b)
 }
+
+public struct TimerStruct {
+    let returnValue: Int32
+    
+    public init(returnValue: Int32) {
+        self.returnValue = returnValue
+    }
+    
+    public func waitFor(seconds: UInt64) async -> Int32 {
+        do {
+            try await Task.sleep(nanoseconds: seconds * 1_000_000_000)
+        } catch {
+            print("Failed to sleep: \(error)")
+            return -1
+        }
+        return returnValue
+    }
+}
+

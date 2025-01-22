@@ -4,6 +4,7 @@
 using Xunit;
 using Swift.StructsTests;
 using Swift.Runtime;
+using System.Diagnostics;
 
 namespace BindingsGeneration.FunctionalTests
 {
@@ -279,6 +280,20 @@ namespace BindingsGeneration.FunctionalTests
         public void TestStaticMethodThrowingError()
         {
             Assert.Throws<SwiftRuntimeException>(() => StructWithThrowingMethods.sum(0, 0));
+        }
+
+        [Fact]
+        public async Task TestAsyncStruct()
+        {
+            int expectedValue = 42;
+            ulong seconds = 5;
+            TimerStruct timerStruct = new TimerStruct(expectedValue);
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            int result = await timerStruct.waitFor(seconds);
+            sw.Stop();
+            Assert.Equal(expectedValue, result);
+            Assert.True(Math.Abs(sw.Elapsed.TotalSeconds - seconds) <= 1);
         }
     }
 }
