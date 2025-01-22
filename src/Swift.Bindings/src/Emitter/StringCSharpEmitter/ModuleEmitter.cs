@@ -36,17 +36,24 @@ namespace BindingsGeneration
         {
             if (_conductor.TryGetModuleHandler(moduleDecl, out var moduleHandler))
             {
-                var sw = new StringWriter();
-                IndentedTextWriter writer = new(sw);
+                var csStringWriter = new StringWriter();
+                IndentedTextWriter csWriter = new(csStringWriter);
+                var swiftStringWriter = new StringWriter();
+                IndentedTextWriter swiftWriter = new(swiftStringWriter);
                 var @namespace = $"Swift.{moduleDecl.Name}";
 
                 var env = moduleHandler.Marshal(moduleDecl, _typeDatabase);
-                moduleHandler.Emit(writer, env, _conductor);
+                moduleHandler.Emit(csWriter, swiftWriter, env, _conductor);
 
                 string csOutputPath = Path.Combine(_outputDirectory, $"{@namespace}.cs");
                 using (StreamWriter outputFile = new(csOutputPath))
                 {
-                    outputFile.Write(sw.ToString());
+                    outputFile.Write(csStringWriter.ToString());
+                }
+                string swiftOutputPath = Path.Combine(_outputDirectory, $"{@namespace}.swift");
+                using (StreamWriter outputFile = new(swiftOutputPath))
+                {
+                    outputFile.Write(swiftStringWriter.ToString());
                 }
             }
             else
