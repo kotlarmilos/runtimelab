@@ -55,10 +55,10 @@ namespace BindingsGeneration
         /// <summary>
         /// Emits the code for the specified environment.
         /// </summary>
-        /// <param name="writer">The IndentedTextWriter instance.</param>
+        /// <param name="csWriter">The IndentedTextWriter instance.</param>
         /// <param name="env">The environment.</param>
         /// <param name="conductor">The conductor instance.</param>
-        public void Emit(IndentedTextWriter writer, IEnvironment env, Conductor conductor)
+        public void Emit(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter, IEnvironment env, Conductor conductor)
         {
             var methodEnv = (MethodEnvironment)env;
             if (methodEnv.SignatureHandler.GetWrapperSignature().ContainsPlaceholder)
@@ -68,9 +68,9 @@ namespace BindingsGeneration
             }
 
             var wrapperEmitter = new WrapperEmitter(methodEnv);
-            wrapperEmitter.EmitConstructor(writer);
-            PInvokeEmitter.EmitPInvoke(writer, methodEnv);
-            writer.WriteLine();
+            wrapperEmitter.EmitConstructor(csWriter, swiftWriter);
+            PInvokeEmitter.EmitPInvoke(csWriter, swiftWriter, methodEnv);
+            csWriter.WriteLine();
         }
     }
 
@@ -124,10 +124,10 @@ namespace BindingsGeneration
         /// <summary>
         /// Emits the method declaration.
         /// </summary>
-        /// <param name="writer">The IndentedTextWriter instance.</param>
+        /// <param name="csWriter">The IndentedTextWriter instance.</param>
         /// <param name="env">The environment.</param>
         /// <param name="conductor">The conductor instance.</param>
-        public void Emit(IndentedTextWriter writer, IEnvironment env, Conductor conductor)
+        public void Emit(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter, IEnvironment env, Conductor conductor)
         {
             var methodEnv = (MethodEnvironment)env;
             if (methodEnv.SignatureHandler.GetWrapperSignature().ContainsPlaceholder)
@@ -137,9 +137,9 @@ namespace BindingsGeneration
             }
 
             var wrapperEmitter = new WrapperEmitter(methodEnv);
-            wrapperEmitter.EmitMethod(writer);
-            PInvokeEmitter.EmitPInvoke(writer, methodEnv);
-            writer.WriteLine();
+            wrapperEmitter.EmitMethod(csWriter, swiftWriter);
+            PInvokeEmitter.EmitPInvoke(csWriter, swiftWriter, methodEnv);
+            csWriter.WriteLine();
         }
     }
 
@@ -424,22 +424,28 @@ namespace BindingsGeneration
         /// <summary>
         /// Emits the PInvoke signature.
         /// </summary>
-        /// <param name="writer">The IndentedTextWriter instance.</param>
+        /// <param name="csWriter">The IndentedTextWriter instance.</param>
         /// <param name="methodEnv">The method environment.</param>
-        public static void EmitPInvoke(IndentedTextWriter writer, MethodEnvironment methodEnv)
+        public static void EmitPInvoke(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter, MethodEnvironment methodEnv)
         {
             var methodDecl = (MethodDecl)methodEnv.MethodDecl;
             var moduleDecl = methodDecl.ModuleDecl ?? throw new ArgumentNullException(nameof(methodDecl.ModuleDecl));
 
             var pInvokeName = NameProvider.GetPInvokeName(methodDecl);
             var libPath = methodEnv.TypeDatabase.GetLibraryPath(moduleDecl.Name);
-
-            writer.WriteLine("[UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]");
-            writer.WriteLine($"[DllImport(\"{libPath}\", EntryPoint = \"{methodDecl.MangledName}\")]");
-
             var pInvokeSignature = methodEnv.SignatureHandler.GetPInvokeSignature();
 
-            writer.WriteLine($"private static extern {pInvokeSignature.ReturnType} {pInvokeName}({pInvokeSignature.ParametersString()});");
+            csWriter.WriteLine("[UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]");
+            if (methodDecl.IsAsync)
+            {
+                csWriter.WriteLine($"[DllImport(\"{libPath}\", EntryPoint = \"{methodDecl.Name}_async\")]");
+                csWriter.WriteLine($"private static extern void {pInvokeName}(IntPtr callback, IntPtr context, {pInvokeSignature.ParametersString()});");
+            }
+            else
+            {
+                csWriter.WriteLine($"[DllImport(\"{libPath}\", EntryPoint = \"{methodDecl.MangledName}\")]");
+                csWriter.WriteLine($"private static extern {pInvokeSignature.ReturnType} {pInvokeName}({pInvokeSignature.ParametersString()});");
+            }
         }
     }
 
@@ -451,6 +457,16 @@ namespace BindingsGeneration
         public static string GetPInvokeName(MethodDecl methodDecl)
         {
             return $"PInvoke_{methodDecl.Name}";
+        }
+
+        public static string GetGCHandleName(MethodDecl methodDecl)
+        {
+            return $"_callbackHandle";
+        }
+
+        public static string GetDelegateName(MethodDecl methodDecl)
+        {
+            return $"callbackDelegate";
         }
     }
 
@@ -468,6 +484,7 @@ namespace BindingsGeneration
         private readonly bool _requiresIndirectResult;
         private readonly bool _requiresSwiftSelf;
         private readonly bool _requiresSwiftError;
+        private readonly bool _requiresSwiftAsync;
 
         internal WrapperEmitter(MethodEnvironment methodEnv)
         {
@@ -480,45 +497,47 @@ namespace BindingsGeneration
             _requiresIndirectResult = MarshallingHelpers.MethodRequiresIndirectResult(_methodDecl, _parentDecl, _typeDatabase);
             _requiresSwiftSelf = MarshallingHelpers.MethodRequiresSwiftSelf(_methodDecl, _parentDecl);
             _requiresSwiftError = _methodDecl.Throws;
+            _requiresSwiftAsync = _methodDecl.IsAsync;
         }
 
         /// <summary>
         /// Emits the constructor wrapper.
         /// </summary>
-        /// <param name="writer">The IndentedTextWriter instance.</param>
-        internal void EmitConstructor(IndentedTextWriter writer)
+        /// <param name="csWriter">The IndentedTextWriter instance.</param>
+        internal void EmitConstructor(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
         {
-            EmitSignatureConstructor(writer);
-            EmitBodyStart(writer);
-            EmitSwiftSelf(writer);
-            EmitIndirectResultConstructor(writer);
-            EmitPInvokeCall(writer);
-            EmitSwiftError(writer);
-            EmitReturnConstructor(writer);
-            EmitBodyEnd(writer);
+            EmitSignatureConstructor(csWriter, swiftWriter);
+            EmitBodyStart(csWriter, swiftWriter);
+            EmitSwiftSelf(csWriter, swiftWriter);
+            EmitIndirectResultConstructor(csWriter, swiftWriter);
+            EmitPInvokeCall(csWriter, swiftWriter);
+            EmitSwiftError(csWriter, swiftWriter);
+            EmitReturnConstructor(csWriter, swiftWriter);
+            EmitBodyEnd(csWriter, swiftWriter);
         }
 
         /// <summary>
         /// Emits the method wrapper.
         /// </summary>
-        /// <param name="writer">The IndentedTextWriter instance.</param>
-        internal void EmitMethod(IndentedTextWriter writer)
+        /// <param name="csWriter">The IndentedTextWriter instance.</param>
+        internal void EmitMethod(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
         {
-            EmitSignatureMethod(writer);
-            EmitBodyStart(writer);
-            EmitSwiftSelf(writer);
-            EmitIndirectResultMethod(writer);
-            EmitPInvokeCall(writer);
-            EmitSwiftError(writer);
-            EmitReturnMethod(writer);
-            EmitBodyEnd(writer);
+            EmitSignatureMethod(csWriter, swiftWriter);
+            EmitBodyStart(csWriter, swiftWriter);
+            EmitAsync(csWriter, swiftWriter);
+            EmitSwiftSelf(csWriter, swiftWriter);
+            EmitIndirectResultMethod(csWriter, swiftWriter);
+            EmitPInvokeCall(csWriter, swiftWriter);
+            EmitSwiftError(csWriter, swiftWriter);
+            EmitReturnMethod(csWriter, swiftWriter);
+            EmitBodyEnd(csWriter, swiftWriter);
         }
 
         /// <summary>
         /// Emits the SwiftSelf variable.
         /// </summary>
-        /// <param name="writer">The IndentedTextWriter instance.</param>
-        private void EmitSwiftSelf(IndentedTextWriter writer)
+        /// <param name="csWriter">The IndentedTextWriter instance.</param>
+        private void EmitSwiftSelf(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
         {
             if (!_requiresSwiftSelf)
             {
@@ -527,66 +546,125 @@ namespace BindingsGeneration
 
             if (_methodDecl.ParentDecl is StructDecl structDecl && MarshallingHelpers.StructIsMarshalledAsCSStruct(structDecl))
             {
-                writer.WriteLine($"var self = new SwiftSelf<{_methodDecl.ParentDecl.Name}>(this);");
+                csWriter.WriteLine($"var self = new SwiftSelf<{_methodDecl.ParentDecl.Name}>(this);");
             }
             else
             {
-                writer.WriteLine("var self = new SwiftSelf((void*)_payload);");
+                csWriter.WriteLine("var self = new SwiftSelf((void*)_payload);");
             }
 
-            writer.WriteLine();
+            csWriter.WriteLine();
+        }
+
+        /// <summary>
+        /// Emits the Async task.
+        /// </summary>
+        /// <param name="csWriter">The IndentedTextWriter instance.</param>
+        private void EmitAsync(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
+        {
+            if (!_requiresSwiftAsync)
+                return;
+
+            var text = $$"""
+            TaskCompletionSource<{{_wrapperSignature.ReturnType}}> task = new TaskCompletionSource<{{_wrapperSignature.ReturnType}}>();
+            CallbackDelegate callbackDelegate = null;
+            callbackDelegate = ({{_wrapperSignature.ReturnType}} result) =>
+            {
+                try
+                {
+                    task.TrySetResult(result);
+                }
+                finally
+                {
+                    if (_callbackHandle.HasValue)
+                    {
+                        _callbackHandle.Value.Free();
+                        _callbackHandle = null;
+                    }
+                }
+            };
+
+            _callbackHandle = GCHandle.Alloc(callbackDelegate);
+            """;
+            csWriter.WriteLines(text);
+
+            text = $$"""
+            extension {{_methodDecl.ParentDecl!.Name}} {
+                @_silgen_name("{{_methodDecl.Name}}_async")
+                public func {{NameProvider.GetPInvokeName(_methodDecl)}}_async({{string.Join(", ", new[] {
+                                                                                    $"callback: @escaping ({_methodDecl.CSSignature.First().SwiftTypeSpec}) -> Void"
+                                                                                }.Concat(
+                                                                                    _methodDecl.CSSignature.Skip(1)
+                                                                                        .Select(p => p.Name + ": " + p.SwiftTypeSpec)
+                                                                                ))}}) {
+                    Task {
+                        let result = await {{_methodDecl.Name}}({{string.Join(", ", _methodDecl.CSSignature.Skip(1).Select(p => p.Name+": "+p.Name))}})
+                        callback(result)
+                    }
+                }
+            }
+            """;
+            swiftWriter.WriteLine(text);
         }
 
         /// <summary>
         /// Emits the IndirectResult set up in constructor context.
         /// </summary>
-        /// <param name="writer">The IndentedTextWriter instance.</param>
-        private void EmitIndirectResultConstructor(IndentedTextWriter writer)
+        /// <param name="csWriter">The IndentedTextWriter instance.</param>
+        private void EmitIndirectResultConstructor(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
         {
             if (!_requiresIndirectResult)
             {
                 return;
             }
 
-            writer.WriteLine($"_payload = (SwiftHandle)NativeMemory.Alloc(_payloadSize);");
-            writer.WriteLine("var swiftIndirectResult = new SwiftIndirectResult((void*)_payload);");
-            writer.WriteLine();
+            csWriter.WriteLine($"_payload = (SwiftHandle)NativeMemory.Alloc(_payloadSize);");
+            csWriter.WriteLine("var swiftIndirectResult = new SwiftIndirectResult((void*)_payload);");
+            csWriter.WriteLine();
         }
 
 
         /// <summary>
         /// Emits the IndirectResult set up in method context.
         /// </summary>
-        /// <param name="writer">The IndentedTextWriter instance.</param>
-        private void EmitIndirectResultMethod(IndentedTextWriter writer)
+        /// <param name="csWriter">The IndentedTextWriter instance.</param>
+        private void EmitIndirectResultMethod(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
         {
             if (!_requiresIndirectResult)
             {
                 return;
             }
 
-            writer.WriteLine($"var payload = (SwiftHandle)NativeMemory.Alloc({_wrapperSignature.ReturnType}.PayloadSize);");
-            writer.WriteLine("var swiftIndirectResult = new SwiftIndirectResult((void*)payload);");
-            writer.WriteLine();
+            csWriter.WriteLine($"var payload = (SwiftHandle)NativeMemory.Alloc({_wrapperSignature.ReturnType}.PayloadSize);");
+            csWriter.WriteLine("var swiftIndirectResult = new SwiftIndirectResult((void*)payload);");
+            csWriter.WriteLine();
         }
 
         /// <summary>
         /// Emits the PInvoke call.
         /// </summary>
-        /// <param name="writer">The IndentedTextWriter instance.</param>
-        private void EmitPInvokeCall(IndentedTextWriter writer)
+        /// <param name="csWriter">The IndentedTextWriter instance.</param>
+        private void EmitPInvokeCall(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
         {
-            var voidReturn = _methodDecl.CSSignature.First().SwiftTypeSpec.IsEmptyTuple;
-            var returnPrefix = (_requiresIndirectResult || voidReturn) ? "" : "var result = ";
-            writer.WriteLine($"{returnPrefix}{NameProvider.GetPInvokeName(_methodDecl)}({_pInvokeSignature.CallArgumentsString()});");
-            writer.WriteLine();
+            if (_requiresSwiftAsync)
+            {
+                csWriter.WriteLine($"{NameProvider.GetPInvokeName(_methodDecl)}(Marshal.GetFunctionPointerForDelegate(callbackDelegate), IntPtr.Zero, {_pInvokeSignature.CallArgumentsString()});");
+                csWriter.WriteLine();
+            }
+            else
+            {
+                var voidReturn = _methodDecl.CSSignature.First().SwiftTypeSpec.IsEmptyTuple;
+                var returnPrefix = (_requiresIndirectResult || voidReturn) ? "" : "var result = ";
+                csWriter.WriteLine($"{returnPrefix}{NameProvider.GetPInvokeName(_methodDecl)}({_pInvokeSignature.CallArgumentsString()});");
+                csWriter.WriteLine();
+            }
         }
 
         /// <summary>
         /// Emits the SwiftError handling.
         /// </summary>
-        /// <param name="writer">The IndentedTextWriter instance.</param>
-        private void EmitSwiftError(IndentedTextWriter writer)
+        /// <param name="csWriter">The IndentedTextWriter instance.</param>
+        private void EmitSwiftError(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
         {
             if (!_requiresSwiftError)
             {
@@ -600,41 +678,48 @@ namespace BindingsGeneration
             }
             """;
 
-            writer.WriteLines(text);
-            writer.WriteLine();
+            csWriter.WriteLines(text);
+            csWriter.WriteLine();
         }
 
         /// <summary>
         /// Emits the return statement for the constructor.
         /// </summary>
-        /// <param name="writer">The IndentedTextWriter instance.</param>
-        private void EmitReturnConstructor(IndentedTextWriter writer)
+        /// <param name="csWriter">The IndentedTextWriter instance.</param>
+        private void EmitReturnConstructor(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
         {
             if (!_requiresIndirectResult)
             {
-                writer.WriteLine("this = result;");
+                csWriter.WriteLine("this = result;");
             }
         }
 
         /// <summary>
         /// Emits the return statement for the method.
         /// </summary>
-        /// <param name="writer">The IndentedTextWriter instance.</param>
-        private void EmitReturnMethod(IndentedTextWriter writer)
+        /// <param name="csWriter">The IndentedTextWriter instance.</param>
+        private void EmitReturnMethod(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
         {
             if (_requiresIndirectResult)
             {
-                writer.WriteLine($"return SwiftMarshal.MarshalFromSwift<{_wrapperSignature.ReturnType}>((SwiftHandle)swiftIndirectResult.Value);");
+                csWriter.WriteLine($"return SwiftMarshal.MarshalFromSwift<{_wrapperSignature.ReturnType}>((SwiftHandle)swiftIndirectResult.Value);");
             }
             else
             {
-                if (_methodDecl.CSSignature.First().SwiftTypeSpec.IsEmptyTuple)
+                if (_requiresSwiftAsync)
                 {
-                    writer.WriteLine("return;");
+                    csWriter.WriteLine("return task.Task;");
                 }
                 else
                 {
-                    writer.WriteLine("return result;");
+                    if (_methodDecl.CSSignature.First().SwiftTypeSpec.IsEmptyTuple)
+                    {
+                        csWriter.WriteLine("return;");
+                    }
+                    else
+                    {
+                        csWriter.WriteLine("return result;");
+                    }
                 }
             }
         }
@@ -642,43 +727,56 @@ namespace BindingsGeneration
         /// <summary>
         /// Emits the constructor signature.
         /// </summary>
-        /// <param name="writer">The IndentedTextWriter instance.</param>
-        private void EmitSignatureConstructor(IndentedTextWriter writer)
+        /// <param name="csWriter">The IndentedTextWriter instance.</param>
+        private void EmitSignatureConstructor(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
         {
-            writer.WriteLine($"public {_methodDecl.ParentDecl!.Name}({_wrapperSignature.ParametersString()})");
+            csWriter.WriteLine($"public {_methodDecl.ParentDecl!.Name}({_wrapperSignature.ParametersString()})");
         }
 
         /// <summary>
         /// Emits the method signature.
         /// </summary>
-        /// <param name="writer">The IndentedTextWriter instance.</param>
-        private void EmitSignatureMethod(IndentedTextWriter writer)
+        /// <param name="csWriter">The IndentedTextWriter instance.</param>
+        private void EmitSignatureMethod(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
         {
+            if (_requiresSwiftAsync)
+            {
+                
+                csWriter.WriteLine($"private GCHandle? _callbackHandle;");
+                csWriter.WriteLine($"[UnmanagedFunctionPointer(CallingConvention.Cdecl)]");
+                csWriter.WriteLine($"private delegate void CallbackDelegate({_wrapperSignature.ReturnType} result);");
+                csWriter.WriteLine();
+            }
             var staticKeyword = _methodDecl.MethodType == MethodType.Static || _methodDecl.ParentDecl is ModuleDecl ? "static " : "";
-            var unsafeKeyword = _requiresIndirectResult ? "unsafe " : "";
+            var unsafeKeyword = _requiresIndirectResult || _requiresSwiftAsync ? "unsafe " : "";
+            var returnType = _wrapperSignature.ReturnType;
+            if (_requiresSwiftAsync)
+            {
+                returnType = $"Task<{returnType}>";
+            }
 
-            writer.WriteLine($"public {staticKeyword}{unsafeKeyword} {_wrapperSignature.ReturnType} {_methodDecl.Name}({_wrapperSignature.ParametersString()})");
+            csWriter.WriteLine($"public {staticKeyword}{unsafeKeyword} {returnType} {_methodDecl.Name}({_wrapperSignature.ParametersString()})");
         }
 
         /// <summary>
         /// Emits the body start.
         /// </summary>
-        /// <param name="writer">The IndentedTextWriter instance.</param>
-        private void EmitBodyStart(IndentedTextWriter writer)
+        /// <param name="csWriter">The IndentedTextWriter instance.</param>
+        private void EmitBodyStart(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
         {
-            writer.WriteLine("{");
-            writer.Indent++;
+            csWriter.WriteLine("{");
+            csWriter.Indent++;
         }
 
         /// <summary>
         /// Emits the body end.
         /// </summary>
-        /// <param name="writer">The IndentedTextWriter instance.</param>
-        private void EmitBodyEnd(IndentedTextWriter writer)
+        /// <param name="csWriter">The IndentedTextWriter instance.</param>
+        private void EmitBodyEnd(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
         {
-            writer.Indent--;
-            writer.WriteLine("}");
-            writer.WriteLine();
+            csWriter.Indent--;
+            csWriter.WriteLine("}");
+            csWriter.WriteLine();
         }
     }
 }
