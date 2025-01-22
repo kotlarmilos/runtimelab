@@ -592,6 +592,15 @@ namespace BindingsGeneration.Demangling {
 			case 'V': return DemangleAnyGenericType (NodeKind.Structure);
 			case 'W': return DemangleWitness ();
 			case 'X': return DemangleSpecialType ();
+			case 'Y':{}
+				c2 = NextChar ();
+				switch (c2) {
+					case 'a': return new Node (NodeKind.AsyncAnnotation);
+					default:
+						PushBack ();
+						PushBack ();
+						return DemangleIdentifier ();
+				}
 			case 'Z': return CreateWithChild (NodeKind.Static, PopNode (IsEntity));
 			case 'a': return DemangleAnyGenericType (NodeKind.TypeAlias);
 			case 'c': return PopFunctionType (NodeKind.FunctionType);
@@ -1090,6 +1099,7 @@ namespace BindingsGeneration.Demangling {
 		{
 			var funcType = new Node (kind);
 			AddChild (funcType, PopNode (NodeKind.ThrowsAnnotation));
+			AddChild (funcType, PopNode (NodeKind.AsyncAnnotation));
 			funcType = AddChild (funcType, PopFunctionParams (NodeKind.ArgumentTuple));
 			funcType = AddChild (funcType, PopFunctionParams (NodeKind.ReturnType));
 			return CreateType (funcType);
@@ -1135,6 +1145,8 @@ namespace BindingsGeneration.Demangling {
 			if (parameterType.Kind == NodeKind.ThrowsAnnotation)
 				parameterType = funcType.Children [1];
 
+			if (parameterType.Kind == NodeKind.AsyncAnnotation)
+				parameterType = funcType.Children [1];
 
 			if (parameterType.Index == 0)
 				return null;

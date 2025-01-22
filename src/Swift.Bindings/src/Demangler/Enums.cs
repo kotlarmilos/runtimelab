@@ -259,6 +259,7 @@ public enum NodeKind {
 	BaseConformanceDescriptor,
 	AssociatedTypeDescriptor,
 	ThrowsAnnotation,
+	AsyncAnnotation,
 	EmptyList,
 	FirstElementMarker,
 	VariadicMarker,

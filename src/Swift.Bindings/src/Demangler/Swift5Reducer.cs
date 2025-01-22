@@ -98,6 +98,21 @@ internal class Swift5Reducer {
             }
         },
         new MatchRule() {
+            Name = "FunctionType", NodeKindList = new List<NodeKind> () { NodeKind.FunctionType, NodeKind.NoEscapeFunctionType },
+            Reducer = ConvertFunctionTypeAsync,
+            ChildRules = new List<MatchRule> () {
+                new MatchRule () {
+                    Name = "AsyncAnnotation", NodeKind = NodeKind.AsyncAnnotation, Reducer = MatchRule.ErrorReducer
+                },
+                new MatchRule () {
+                    Name = "Arguments", NodeKind = NodeKind.ArgumentTuple, Reducer = MatchRule.ErrorReducer
+                },
+                new MatchRule () {
+                    Name = "ReturnType", NodeKind = NodeKind.ReturnType, Reducer = MatchRule.ErrorReducer
+                },
+            }
+        },
+        new MatchRule() {
             Name = "Function", NodeKind = NodeKind.Function, Reducer = ConvertFunction,
             ChildRules = new List<MatchRule> () {
                 new MatchRule () {
@@ -445,6 +460,22 @@ internal class Swift5Reducer {
     }
 
     /// <summary>
+    /// Convert a FunctionType node that is async into a TypeSpecReduction
+    /// </summary>
+    /// <param name="node">a FunctionType node</param>
+    /// <param name="mangledName">the mangled name that generated the Node</param>
+    /// <returns>A TypeSpecReduction</returns>
+    static IReduction ConvertFunctionTypeAsync (Node node, string mangledName)
+    {
+        // Expect:
+        // AsyncAnnotation
+        // ArgumentTuple
+        // ReturnType
+        var noEscaping = node.Kind == NodeKind.NoEscapeFunctionType;
+        return ConvertFunctionAsync (node.Children [1], node.Children [2], true, noEscaping, mangledName);
+    }
+
+    /// <summary>
     /// Converts an argument tuple and return type to a TypeSpecReduction
     /// </summary>
     /// <param name="argTuple">The function arguments Node</param>
@@ -465,6 +496,38 @@ internal class Swift5Reducer {
             else if (reduction is TypeSpecReduction returnTypeSpecReduction) {
                 var closure = new ClosureTypeSpec (argsTypeSpecReduction.TypeSpec, returnTypeSpecReduction.TypeSpec);
                 closure.Throws = throws;
+                if (!noEscaping)
+                    closure.Attributes.Add (new TypeSpecAttribute ("escaping"));
+                return new TypeSpecReduction () { Symbol = argsTypeSpecReduction.Symbol, TypeSpec = closure };
+            } else {
+                return ReductionErrorLow (ExpectedButGot ("TypeSpecReduction in function return type", reduction.GetType ().Name, mangledName), mangledName);
+            }            
+        } else {
+            return ReductionErrorLow (ExpectedButGot ("TypeSpecReduction in argument tuple type", reduction.GetType ().Name, mangledName), mangledName);
+        }
+    }
+
+    /// <summary>
+    /// Converts an argument tuple and return type to a TypeSpecReduction
+    /// </summary>
+    /// <param name="argTuple">The function arguments Node</param>
+    /// <param name="return">The return type Node</param>
+    /// <param name="isAsync">Whether or not the function is async</param>
+    /// <param name="noEscaping">Whether or not the function can't escape</param>
+    /// <param name="mangledName">the mangled name that generated the Node</param>
+    /// <returns>A TypeSpecReduction containing a ClosureTypeSpec</returns>
+    static IReduction ConvertFunctionAsync (Node argTuple, Node @return, bool isAsync, bool noEscaping, string mangledName)
+    {
+        var reduction = ConvertFirstChild (argTuple, mangledName);
+        if (reduction is ReductionError error)
+            return error;
+        else if (reduction is TypeSpecReduction argsTypeSpecReduction) {
+            reduction = ConvertFirstChild (@return, mangledName);
+            if (reduction is ReductionError returnError)
+                return returnError;
+            else if (reduction is TypeSpecReduction returnTypeSpecReduction) {
+                var closure = new ClosureTypeSpec (argsTypeSpecReduction.TypeSpec, returnTypeSpecReduction.TypeSpec);
+                closure.IsAsync = isAsync;
                 if (!noEscaping)
                     closure.Attributes.Add (new TypeSpecAttribute ("escaping"));
                 return new TypeSpecReduction () { Symbol = argsTypeSpecReduction.Symbol, TypeSpec = closure };
@@ -520,7 +583,7 @@ internal class Swift5Reducer {
                         if (!string.IsNullOrEmpty (labels [i]))
                             args.Elements [i].TypeLabel = labels [i];
                     }
-                    var function = new SwiftFunction () { Name = identifier, ParameterList = args, Provenance = provenance.Provenance, Return = closure.ReturnType };
+                    var function = new SwiftFunction () { Name = identifier, ParameterList = args, Provenance = provenance.Provenance, Return = closure.ReturnType, IsAsync = closure.IsAsync };
                     function.GenericParameters.AddRange (closure.GenericParameters);
                     return new FunctionReduction () { Symbol = mangledName, Function = function };
                 } else {
@@ -568,7 +631,7 @@ internal class Swift5Reducer {
             else if (reduction is TypeSpecReduction typeSpecReduction) {
                 if (typeSpecReduction.TypeSpec is ClosureTypeSpec closure) {
                     var args = closure.ArgumentsAsTuple;
-                    var function = new SwiftFunction () { Name = identifier, ParameterList = args, Provenance = provenance.Provenance, Return = closure.ReturnType };
+                    var function = new SwiftFunction () { Name = identifier, ParameterList = args, Provenance = provenance.Provenance, Return = closure.ReturnType, IsAsync = closure.IsAsync };
                     return new FunctionReduction () { Symbol = mangledName, Function = function };
                 } else {
                     return ReductionErrorHigh (ExpectedButGot ("ClosureTypeSpec as Allocator Type", typeSpecReduction.TypeSpec.GetType ().Name, mangledName), mangledName);
