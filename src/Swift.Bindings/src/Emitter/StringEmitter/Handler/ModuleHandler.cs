@@ -59,7 +59,7 @@ namespace BindingsGeneration
         /// <param name="env">The environment.</param>
         /// <param name="conductor">The conductor instance.</param>
         /// <param name="typeDatabase">The type database instance.</param>
-        public void Emit(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter, IEnvironment env, Conductor conductor)
+        public void Emit(CSharpWriter csWriter, SwiftWriter swiftWriter, IEnvironment env, Conductor conductor)
         {
             var moduleEnv = (ModuleEnvironment)env;
             var moduleDecl = moduleEnv.ModuleDecl;

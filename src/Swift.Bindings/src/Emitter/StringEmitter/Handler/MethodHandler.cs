@@ -58,7 +58,7 @@ namespace BindingsGeneration
         /// <param name="csWriter">The IndentedTextWriter instance.</param>
         /// <param name="env">The environment.</param>
         /// <param name="conductor">The conductor instance.</param>
-        public void Emit(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter, IEnvironment env, Conductor conductor)
+        public void Emit(CSharpWriter csWriter, SwiftWriter swiftWriter, IEnvironment env, Conductor conductor)
         {
             var methodEnv = (MethodEnvironment)env;
             if (methodEnv.SignatureHandler.GetWrapperSignature().ContainsPlaceholder)
@@ -127,7 +127,7 @@ namespace BindingsGeneration
         /// <param name="csWriter">The IndentedTextWriter instance.</param>
         /// <param name="env">The environment.</param>
         /// <param name="conductor">The conductor instance.</param>
-        public void Emit(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter, IEnvironment env, Conductor conductor)
+        public void Emit(CSharpWriter csWriter, SwiftWriter swiftWriter, IEnvironment env, Conductor conductor)
         {
             var methodEnv = (MethodEnvironment)env;
             if (methodEnv.SignatureHandler.GetWrapperSignature().ContainsPlaceholder)
@@ -426,7 +426,7 @@ namespace BindingsGeneration
         /// </summary>
         /// <param name="csWriter">The IndentedTextWriter instance.</param>
         /// <param name="methodEnv">The method environment.</param>
-        public static void EmitPInvoke(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter, MethodEnvironment methodEnv)
+        public static void EmitPInvoke(CSharpWriter csWriter, SwiftWriter swiftWriter, MethodEnvironment methodEnv)
         {
             var methodDecl = (MethodDecl)methodEnv.MethodDecl;
             var moduleDecl = methodDecl.ModuleDecl ?? throw new ArgumentNullException(nameof(methodDecl.ModuleDecl));
@@ -504,7 +504,7 @@ namespace BindingsGeneration
         /// Emits the constructor wrapper.
         /// </summary>
         /// <param name="csWriter">The IndentedTextWriter instance.</param>
-        internal void EmitConstructor(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
+        internal void EmitConstructor(CSharpWriter csWriter, SwiftWriter swiftWriter)
         {
             EmitSignatureConstructor(csWriter, swiftWriter);
             EmitBodyStart(csWriter, swiftWriter);
@@ -520,7 +520,7 @@ namespace BindingsGeneration
         /// Emits the method wrapper.
         /// </summary>
         /// <param name="csWriter">The IndentedTextWriter instance.</param>
-        internal void EmitMethod(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
+        internal void EmitMethod(CSharpWriter csWriter, SwiftWriter swiftWriter)
         {
             EmitSignatureMethod(csWriter, swiftWriter);
             EmitBodyStart(csWriter, swiftWriter);
@@ -537,7 +537,7 @@ namespace BindingsGeneration
         /// Emits the SwiftSelf variable.
         /// </summary>
         /// <param name="csWriter">The IndentedTextWriter instance.</param>
-        private void EmitSwiftSelf(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
+        private void EmitSwiftSelf(CSharpWriter csWriter, SwiftWriter swiftWriter)
         {
             if (!_requiresSwiftSelf)
             {
@@ -560,7 +560,7 @@ namespace BindingsGeneration
         /// Emits the Async task.
         /// </summary>
         /// <param name="csWriter">The IndentedTextWriter instance.</param>
-        private void EmitAsync(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
+        private void EmitAsync(CSharpWriter csWriter, SwiftWriter swiftWriter)
         {
             if (!_requiresSwiftAsync)
                 return;
@@ -588,15 +588,12 @@ namespace BindingsGeneration
             """;
             csWriter.WriteLines(text);
 
+            string parameters = string.Join(", ", new[] {$"callback: @escaping ({_methodDecl.CSSignature.First().SwiftTypeSpec}) -> Void"}.Concat(_methodDecl.CSSignature.Skip(1).Select(p => p.Name + ": " + p.SwiftTypeSpec)));
+
             text = $$"""
             extension {{_methodDecl.ParentDecl!.Name}} {
                 @_silgen_name("{{_methodDecl.Name}}_async")
-                public func {{NameProvider.GetPInvokeName(_methodDecl)}}_async({{string.Join(", ", new[] {
-                                                                                    $"callback: @escaping ({_methodDecl.CSSignature.First().SwiftTypeSpec}) -> Void"
-                                                                                }.Concat(
-                                                                                    _methodDecl.CSSignature.Skip(1)
-                                                                                        .Select(p => p.Name + ": " + p.SwiftTypeSpec)
-                                                                                ))}}) {
+                public func {{NameProvider.GetPInvokeName(_methodDecl)}}_async({{parameters}}) {
                     Task {
                         let result = await {{_methodDecl.Name}}({{string.Join(", ", _methodDecl.CSSignature.Skip(1).Select(p => p.Name+": "+p.Name))}})
                         callback(result)
@@ -611,7 +608,7 @@ namespace BindingsGeneration
         /// Emits the IndirectResult set up in constructor context.
         /// </summary>
         /// <param name="csWriter">The IndentedTextWriter instance.</param>
-        private void EmitIndirectResultConstructor(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
+        private void EmitIndirectResultConstructor(CSharpWriter csWriter, SwiftWriter swiftWriter)
         {
             if (!_requiresIndirectResult)
             {
@@ -628,7 +625,7 @@ namespace BindingsGeneration
         /// Emits the IndirectResult set up in method context.
         /// </summary>
         /// <param name="csWriter">The IndentedTextWriter instance.</param>
-        private void EmitIndirectResultMethod(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
+        private void EmitIndirectResultMethod(CSharpWriter csWriter, SwiftWriter swiftWriter)
         {
             if (!_requiresIndirectResult)
             {
@@ -644,7 +641,7 @@ namespace BindingsGeneration
         /// Emits the PInvoke call.
         /// </summary>
         /// <param name="csWriter">The IndentedTextWriter instance.</param>
-        private void EmitPInvokeCall(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
+        private void EmitPInvokeCall(CSharpWriter csWriter, SwiftWriter swiftWriter)
         {
             if (_requiresSwiftAsync)
             {
@@ -664,7 +661,7 @@ namespace BindingsGeneration
         /// Emits the SwiftError handling.
         /// </summary>
         /// <param name="csWriter">The IndentedTextWriter instance.</param>
-        private void EmitSwiftError(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
+        private void EmitSwiftError(CSharpWriter csWriter, SwiftWriter swiftWriter)
         {
             if (!_requiresSwiftError)
             {
@@ -686,7 +683,7 @@ namespace BindingsGeneration
         /// Emits the return statement for the constructor.
         /// </summary>
         /// <param name="csWriter">The IndentedTextWriter instance.</param>
-        private void EmitReturnConstructor(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
+        private void EmitReturnConstructor(CSharpWriter csWriter, SwiftWriter swiftWriter)
         {
             if (!_requiresIndirectResult)
             {
@@ -698,7 +695,7 @@ namespace BindingsGeneration
         /// Emits the return statement for the method.
         /// </summary>
         /// <param name="csWriter">The IndentedTextWriter instance.</param>
-        private void EmitReturnMethod(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
+        private void EmitReturnMethod(CSharpWriter csWriter, SwiftWriter swiftWriter)
         {
             if (_requiresIndirectResult)
             {
@@ -728,7 +725,7 @@ namespace BindingsGeneration
         /// Emits the constructor signature.
         /// </summary>
         /// <param name="csWriter">The IndentedTextWriter instance.</param>
-        private void EmitSignatureConstructor(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
+        private void EmitSignatureConstructor(CSharpWriter csWriter, SwiftWriter swiftWriter)
         {
             csWriter.WriteLine($"public {_methodDecl.ParentDecl!.Name}({_wrapperSignature.ParametersString()})");
         }
@@ -737,7 +734,7 @@ namespace BindingsGeneration
         /// Emits the method signature.
         /// </summary>
         /// <param name="csWriter">The IndentedTextWriter instance.</param>
-        private void EmitSignatureMethod(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
+        private void EmitSignatureMethod(CSharpWriter csWriter, SwiftWriter swiftWriter)
         {
             if (_requiresSwiftAsync)
             {
@@ -762,7 +759,7 @@ namespace BindingsGeneration
         /// Emits the body start.
         /// </summary>
         /// <param name="csWriter">The IndentedTextWriter instance.</param>
-        private void EmitBodyStart(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
+        private void EmitBodyStart(CSharpWriter csWriter, SwiftWriter swiftWriter)
         {
             csWriter.WriteLine("{");
             csWriter.Indent++;
@@ -772,7 +769,7 @@ namespace BindingsGeneration
         /// Emits the body end.
         /// </summary>
         /// <param name="csWriter">The IndentedTextWriter instance.</param>
-        private void EmitBodyEnd(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter)
+        private void EmitBodyEnd(CSharpWriter csWriter, SwiftWriter swiftWriter)
         {
             csWriter.Indent--;
             csWriter.WriteLine("}");

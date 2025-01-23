@@ -9,7 +9,7 @@ namespace BindingsGeneration
     /// <summary>
     /// Represents an string-based C# emitter.
     /// </summary>
-    public partial class StringCSharpEmitter : ICSharpEmitter
+    public partial class StringEmitter : IEmitter
     {
         // Private properties
         private readonly string _outputDirectory;
@@ -18,9 +18,9 @@ namespace BindingsGeneration
         private readonly Conductor _conductor;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="StringCSharpEmitter"/> class.
+        /// Initializes a new instance of the <see cref="StringEmitter"/> class.
         /// </summary>
-        public StringCSharpEmitter(string outputDirectory, ITypeDatabase typeDatabase, int verbose = 0)
+        public StringEmitter(string outputDirectory, ITypeDatabase typeDatabase, int verbose = 0)
         {
             _outputDirectory = outputDirectory;
             _typeDatabase = typeDatabase;
@@ -37,9 +37,9 @@ namespace BindingsGeneration
             if (_conductor.TryGetModuleHandler(moduleDecl, out var moduleHandler))
             {
                 var csStringWriter = new StringWriter();
-                IndentedTextWriter csWriter = new(csStringWriter);
+                CSharpWriter csWriter = new(csStringWriter);
                 var swiftStringWriter = new StringWriter();
-                IndentedTextWriter swiftWriter = new(swiftStringWriter);
+                SwiftWriter swiftWriter = new(swiftStringWriter);
                 var @namespace = $"Swift.{moduleDecl.Name}";
 
                 var env = moduleHandler.Marshal(moduleDecl, _typeDatabase);

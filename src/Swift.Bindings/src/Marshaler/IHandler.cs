@@ -24,7 +24,7 @@ namespace BindingsGeneration
         /// <param name="writer">The IndentedTextWriter instance.</param>
         /// <param name="env">The environment.</param>
         /// <param name="conductor">The conductor instance.</param>
-        void Emit(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter, IEnvironment env, Conductor conductor);
+        void Emit(CSharpWriter csWriter, SwiftWriter swiftWriter, IEnvironment env, Conductor conductor);
     }
 
     /// <summary>
@@ -74,7 +74,7 @@ namespace BindingsGeneration
         /// <param name="decl">The list of base declarations.</param>
         /// <param name="conductor">The conductor instance.</param>
         /// <param name="typeDatabase">The type database instance.</param>
-        protected virtual void HandleBaseDecl(IndentedTextWriter csWriter, IndentedTextWriter swiftWriter, IEnumerable<BaseDecl> decl, Conductor conductor, ITypeDatabase typeDatabase)
+        protected virtual void HandleBaseDecl(CSharpWriter csWriter, SwiftWriter swiftWriter, IEnumerable<BaseDecl> decl, Conductor conductor, ITypeDatabase typeDatabase)
         {
             foreach (var baseDecl in decl)
             {

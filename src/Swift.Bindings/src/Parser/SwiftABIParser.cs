@@ -367,7 +367,9 @@ namespace BindingsGeneration
             var paramNames = ExtractParameterNames(node.PrintedName);
             string mangledName = node.Kind == "Constructor" ? PatchMangledName(node.MangledName) : node.MangledName;
 
+            // TODO: https://github.com/dotnet/runtimelab/issues/2954
             var reduction = demangler.Run(mangledName);
+            FunctionReduction? functionReduction = reduction as FunctionReduction;
 
             var methodDecl = new MethodDecl
             {
@@ -382,7 +384,7 @@ namespace BindingsGeneration
                 ParentDecl = parentDecl,
                 ModuleDecl = moduleDecl,
                 Throws = node.throwing ?? false,
-                IsAsync = (reduction as FunctionReduction)?.Function?.IsAsync ?? false
+                IsAsync = functionReduction?.Function?.IsAsync ?? false
             };
 
             for (int i = 0; i < node.Children.Count(); i++)
