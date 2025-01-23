@@ -41,6 +41,9 @@ internal class Swift5Reducer {
             Name = "Tuple", NodeKind = NodeKind.Tuple, Reducer = ConvertTuple
         },
         new MatchRule() {
+            Name = "Static", NodeKind = NodeKind.Static, Reducer = ConvertFirstChild
+        },
+        new MatchRule() {
             Name = "TupleElement", NodeKind = NodeKind.TupleElement, Reducer = ConvertTupleElement,
             ChildRules = new List<MatchRule> () {
                 new MatchRule () {

@@ -238,5 +238,13 @@ public struct TimerStruct {
         }
         return returnValue
     }
+
+    public func waitFor5Seconds() async -> Void {
+        try? await Task.sleep(nanoseconds: 5_000_000_000)
+    }
+
+    public static func waitFor5SecondsStatic() async -> Void {
+        try? await Task.sleep(nanoseconds: 5_000_000_000)
+    }
 }
 

@@ -400,8 +400,17 @@ namespace BindingsGeneration
             csWriter.WriteLine("[UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]");
             if (methodDecl.IsAsync)
             {
+                string parameters = string.Join(", ",
+                    new[]
+                    {
+                        "IntPtr callback",
+                        "IntPtr context",
+                        "IntPtr task",
+                        pInvokeSignature.ParametersString()
+                    }.Where(arg => !string.IsNullOrEmpty(arg))
+                );
                 csWriter.WriteLine($"[DllImport(\"{libPath}\", EntryPoint = \"{methodDecl.Name}_async\")]");
-                csWriter.WriteLine($"private static extern void {pInvokeName}(IntPtr callback, IntPtr context, IntPtr task, {pInvokeSignature.ParametersString()});");
+                csWriter.WriteLine($"private static extern void {pInvokeName}({parameters});");
             }
             else
             {
@@ -554,20 +563,20 @@ namespace BindingsGeneration
                 return;
 
             var text = $$"""
-            TaskCompletionSource<{{_wrapperSignature.ReturnType}}> task = new TaskCompletionSource<{{_wrapperSignature.ReturnType}}>();
+            TaskCompletionSource{{(_env.MethodDecl.CSSignature.First().SwiftTypeSpec.IsEmptyTuple ? "" : $"<{_wrapperSignature.ReturnType}>")}} task = new TaskCompletionSource{{(_env.MethodDecl.CSSignature.First().SwiftTypeSpec.IsEmptyTuple ? "" : $"<{_wrapperSignature.ReturnType}>")}}();
             GCHandle handle = GCHandle.Alloc(task, GCHandleType.Normal);
             """;
             csWriter.WriteLines(text);
 
-            string parameters = string.Join(", ", new[] {$"callback: @escaping ({_env.MethodDecl.CSSignature.First().SwiftTypeSpec}, UnsafeRawPointer) -> Void", $"task: UnsafeRawPointer"}.Concat(_env.MethodDecl.CSSignature.Skip(1).Select(p => p.Name + ": " + p.SwiftTypeSpec)));
+            string parameters = string.Join(", ", new[] {$"callback: @escaping ({(_env.MethodDecl.CSSignature.First().SwiftTypeSpec.IsEmptyTuple ? "" : $"{_env.MethodDecl.CSSignature.First().SwiftTypeSpec}, ")}Int64) -> Void", $"task: Int64"}.Concat(_env.MethodDecl.CSSignature.Skip(1).Select(p => p.Name + ": " + p.SwiftTypeSpec)));
 
             text = $$"""
             extension {{_env.MethodDecl.ParentDecl!.Name}} {
                 @_silgen_name("{{_env.MethodDecl.Name}}_async")
-                public func {{NameProvider.GetPInvokeName(_env.MethodDecl)}}_async({{parameters}}) {
+                public {{(_env.MethodDecl.MethodType == MethodType.Static ? "static " : "")}} func {{NameProvider.GetPInvokeName(_env.MethodDecl)}}_async({{parameters}}) {
                     Task {
-                        let result = await {{_env.MethodDecl.Name}}({{string.Join(", ", _env.MethodDecl.CSSignature.Skip(1).Select(p => p.Name+": "+p.Name))}})
-                        callback(result, task)
+                        {{(_env.MethodDecl.CSSignature.First().SwiftTypeSpec.IsEmptyTuple ? "" : "let result = ")}}await {{(_env.MethodDecl.MethodType == MethodType.Static ? $"{_env.MethodDecl.ParentDecl.Name}." : "")}}{{_env.MethodDecl.Name}}({{string.Join(", ", _env.MethodDecl.CSSignature.Skip(1).Select(p => p.Name+": "+p.Name))}})
+                        callback({{(_env.MethodDecl.CSSignature.First().SwiftTypeSpec.IsEmptyTuple ? "" : "result, ")}}task)
                     }
                 }
             }
@@ -643,7 +652,16 @@ namespace BindingsGeneration
         {
             if (_requiresSwiftAsync)
             {
-                csWriter.WriteLine($"{NameProvider.GetPInvokeName(_env.MethodDecl)}((IntPtr)s_{_env.MethodDecl.Name}Callback, IntPtr.Zero, GCHandle.ToIntPtr(handle), {_pInvokeSignature.CallArgumentsString()});");
+                string parameters = string.Join(", ",
+                    new[]
+                    {
+                        $"(IntPtr)s_{_env.MethodDecl.Name}Callback",
+                        "IntPtr.Zero",
+                        "GCHandle.ToIntPtr(handle)",
+                        _pInvokeSignature.CallArgumentsString()
+                    }.Where(arg => !string.IsNullOrEmpty(arg))
+                );
+                csWriter.WriteLine($"{NameProvider.GetPInvokeName(_env.MethodDecl)}({parameters});");
                 csWriter.WriteLine();
             }
             else
@@ -743,16 +761,16 @@ namespace BindingsGeneration
             {
                 var text = $$"""
                 
-                        private static unsafe delegate* unmanaged[Cdecl]<{{_wrapperSignature.ReturnType}}, IntPtr, void> s_{{_env.MethodDecl.Name}}Callback = &{{_env.MethodDecl.Name}}OnComplete;
+                        private static unsafe delegate* unmanaged[Cdecl]<{{(_env.MethodDecl.CSSignature.First().SwiftTypeSpec.IsEmptyTuple ? "" : $"{_wrapperSignature.ReturnType}, ")}}IntPtr, void> s_{{_env.MethodDecl.Name}}Callback = &{{_env.MethodDecl.Name}}OnComplete;
                         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
-                        private static void {{_env.MethodDecl.Name}}OnComplete({{_wrapperSignature.ReturnType}} result, IntPtr task)
+                        private static void {{_env.MethodDecl.Name}}OnComplete({{(_env.MethodDecl.CSSignature.First().SwiftTypeSpec.IsEmptyTuple ? "" : $"{_wrapperSignature.ReturnType} result, ")}}IntPtr task)
                         {
                             GCHandle handle = GCHandle.FromIntPtr(task);
                             try
                             {
-                                if (handle.Target is TaskCompletionSource<{{_wrapperSignature.ReturnType}}> tcs)
+                                if (handle.Target is TaskCompletionSource{{(_env.MethodDecl.CSSignature.First().SwiftTypeSpec.IsEmptyTuple ? "" : $"<{_wrapperSignature.ReturnType}>")}} tcs)
                                 {
-                                    tcs.TrySetResult(result);
+                                    tcs.TrySetResult({{(_env.MethodDecl.CSSignature.First().SwiftTypeSpec.IsEmptyTuple ? "" : "result")}});
                                 }
                             }
                             finally
@@ -775,7 +793,7 @@ namespace BindingsGeneration
             var returnType = _wrapperSignature.ReturnType;
             if (_requiresSwiftAsync)
             {
-                returnType = $"Task<{returnType}>";
+                returnType = $"Task{(_env.MethodDecl.CSSignature.First().SwiftTypeSpec.IsEmptyTuple ? "" : $"<{_wrapperSignature.ReturnType}>")}";
             }
 
             csWriter.WriteLine($"public {staticKeyword}{unsafeKeyword}{returnType} {_env.MethodDecl.Name}{genericParams}({_wrapperSignature.ParametersString()})");
