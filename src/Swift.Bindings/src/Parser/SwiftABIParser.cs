@@ -370,6 +370,7 @@ namespace BindingsGeneration
                 MethodType = node.@static ?? false ? MethodType.Static : MethodType.Instance,
                 IsConstructor = node.Kind == "Constructor",
                 CSSignature = new List<ArgumentDecl>(),
+                GenericParameters = GenericSignatureParser.ParseGenericSignature(node.GenericSig, node.sugared_genericSig),
                 ParentDecl = parentDecl,
                 ModuleDecl = moduleDecl,
                 Throws = node.throwing ?? false
@@ -392,6 +393,7 @@ namespace BindingsGeneration
                     FullyQualifiedName = string.Empty,
                     PrivateName = string.Empty,
                     IsInOut = false,
+                    IsGeneric = node.Children.ElementAt(i).Name == "GenericTypeParam",
                     ParentDecl = methodDecl,
                     ModuleDecl = moduleDecl
                 });
