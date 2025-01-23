@@ -79,7 +79,7 @@ namespace BindingsGeneration
             var wrapperEmitter = new WrapperEmitter(methodEnv, signatureHandler);
             wrapperEmitter.Emit(csWriter, swiftWriter);
             PInvokeEmitter.EmitPInvoke(csWriter, swiftWriter, methodEnv, signatureHandler);
-            writer.WriteLine();
+            csWriter.WriteLine();
         }
     }
 
@@ -395,16 +395,13 @@ namespace BindingsGeneration
             var pInvokeName = NameProvider.GetPInvokeName(methodDecl);
             var libPath = methodEnv.TypeDatabase.GetLibraryPath(moduleDecl.Name);
 
-            writer.WriteLine("[UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]");
-            writer.WriteLine($"[DllImport(\"{libPath}\", EntryPoint = \"{methodDecl.MangledName}\")]");
-
             var pInvokeSignature = signatureHandler.GetPInvokeSignature();
 
             csWriter.WriteLine("[UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]");
             if (methodDecl.IsAsync)
             {
                 csWriter.WriteLine($"[DllImport(\"{libPath}\", EntryPoint = \"{methodDecl.Name}_async\")]");
-                csWriter.WriteLine($"private static extern void {pInvokeName}(IntPtr callback, IntPtr context, {pInvokeSignature.ParametersString()});");
+                csWriter.WriteLine($"private static extern void {pInvokeName}(IntPtr callback, IntPtr context, IntPtr task, {pInvokeSignature.ParametersString()});");
             }
             else
             {
@@ -438,22 +435,22 @@ namespace BindingsGeneration
             _requiresIndirectResult = MarshallingHelpers.MethodRequiresIndirectResult(methodEnv);
             _requiresSwiftSelf = MarshallingHelpers.MethodRequiresSwiftSelf(methodEnv);
             _requiresSwiftError = _env.MethodDecl.Throws;
-            _requiresSwiftAsync = _methodDecl.IsAsync;
+            _requiresSwiftAsync = _env.MethodDecl.IsAsync;
         }
 
         /// <summary>
         /// Emits the wrapper.
         /// </summary>
         /// <param name="writer"></param>
-        internal void Emit(IndentedTextWriter writer)
+        internal void Emit(CSharpWriter csWriter, SwiftWriter swiftWriter)
         {
             if (_env.MethodDecl.IsConstructor)
             {
-                EmitConstructor(writer);
+                EmitConstructor(csWriter, swiftWriter);
             }
             else
             {
-                EmitMethod(writer);
+                EmitMethod(csWriter, swiftWriter);
             }
         }
 
@@ -463,36 +460,36 @@ namespace BindingsGeneration
         /// <param name="writer">The IndentedTextWriter instance.</param>
         private void EmitConstructor(CSharpWriter csWriter, SwiftWriter swiftWriter)
         {
-            EmitSignatureConstructor(writer);
-            EmitBodyStart(writer);
+            EmitSignatureConstructor(csWriter, swiftWriter);
+            EmitBodyStart(csWriter, swiftWriter);
 
-            EmitDeclarationsForAllocations(writer);
+            EmitDeclarationsForAllocations(csWriter, swiftWriter);
 
-            EmitTryBlockStart(writer);
+            EmitTryBlockStart(csWriter, swiftWriter);
 
-            EmitSwiftSelf(writer);
-            EmitIndirectResultConstructor(writer);
-            EmitGenericArguments(writer);
-            EmitPInvokeCall(writer);
-            EmitSwiftError(writer);
-            EmitReturnConstructor(writer);
+            EmitSwiftSelf(csWriter, swiftWriter);
+            EmitIndirectResultConstructor(csWriter, swiftWriter);
+            EmitGenericArguments(csWriter, swiftWriter);
+            EmitPInvokeCall(csWriter, swiftWriter);
+            EmitSwiftError(csWriter, swiftWriter);
+            EmitReturnConstructor(csWriter, swiftWriter);
 
-            EmitTryBlockEnd(writer);
+            EmitTryBlockEnd(csWriter, swiftWriter);
 
-            EmitFinally(writer);
+            EmitFinally(csWriter, swiftWriter);
 
-            EmitBodyEnd(writer);
+            EmitBodyEnd(csWriter, swiftWriter);
         }
 
         /// <summary>
         /// Emits the declarations for allocations.
         /// </summary>
-        private void EmitDeclarationsForAllocations(IndentedTextWriter writer)
+        private void EmitDeclarationsForAllocations(CSharpWriter csWriter, SwiftWriter swiftWriter)
         {
             foreach (var argument in _env.MethodDecl.CSSignature.Skip(1).Where(a => a.IsGeneric))
             {
                 var (typeName, metadataName, payloadName) = _env.GenericTypeMapping[argument.SwiftTypeSpec.ToString()];
-                writer.WriteLine($"IntPtr {payloadName} = IntPtr.Zero;");
+                csWriter.WriteLine($"IntPtr {payloadName} = IntPtr.Zero;");
             }
         }
 
@@ -502,26 +499,26 @@ namespace BindingsGeneration
         /// <param name="writer">The IndentedTextWriter instance.</param>
         private void EmitMethod(CSharpWriter csWriter, SwiftWriter swiftWriter)
         {
-            EmitSignatureMethod(writer);
-            EmitBodyStart(writer);
+            EmitSignatureMethod(csWriter, swiftWriter);
+            EmitBodyStart(csWriter, swiftWriter);
             EmitAsync(csWriter, swiftWriter);
 
-            EmitDeclarationsForAllocations(writer);
+            EmitDeclarationsForAllocations(csWriter, swiftWriter);
 
-            EmitTryBlockStart(writer);
+            EmitTryBlockStart(csWriter, swiftWriter);
 
-            EmitSwiftSelf(writer);
-            EmitIndirectResultMethod(writer);
-            EmitGenericArguments(writer);
-            EmitPInvokeCall(writer);
-            EmitSwiftError(writer);
-            EmitReturnMethod(writer);
+            EmitSwiftSelf(csWriter, swiftWriter);
+            EmitIndirectResultMethod(csWriter, swiftWriter);
+            EmitGenericArguments(csWriter, swiftWriter);
+            EmitPInvokeCall(csWriter, swiftWriter);
+            EmitSwiftError(csWriter, swiftWriter);
+            EmitReturnMethod(csWriter, swiftWriter);
 
-            EmitTryBlockEnd(writer);
+            EmitTryBlockEnd(csWriter, swiftWriter);
 
-            EmitFinally(writer);
+            EmitFinally(csWriter, swiftWriter);
 
-            EmitBodyEnd(writer);
+            EmitBodyEnd(csWriter, swiftWriter);
         }
 
         /// <summary>
@@ -537,7 +534,7 @@ namespace BindingsGeneration
 
             if (_env.ParentDecl is StructDecl structDecl && MarshallingHelpers.StructIsMarshalledAsCSStruct(structDecl))
             {
-                writer.WriteLine($"var self = new SwiftSelf<{_env.ParentDecl.Name}>(this);");
+                csWriter.WriteLine($"var self = new SwiftSelf<{_env.ParentDecl.Name}>(this);");
             }
             else
             {
@@ -558,36 +555,19 @@ namespace BindingsGeneration
 
             var text = $$"""
             TaskCompletionSource<{{_wrapperSignature.ReturnType}}> task = new TaskCompletionSource<{{_wrapperSignature.ReturnType}}>();
-            CallbackDelegate callbackDelegate = null;
-            callbackDelegate = ({{_wrapperSignature.ReturnType}} result) =>
-            {
-                try
-                {
-                    task.TrySetResult(result);
-                }
-                finally
-                {
-                    if (_callbackHandle.HasValue)
-                    {
-                        _callbackHandle.Value.Free();
-                        _callbackHandle = null;
-                    }
-                }
-            };
-
-            _callbackHandle = GCHandle.Alloc(callbackDelegate);
+            GCHandle handle = GCHandle.Alloc(task, GCHandleType.Normal);
             """;
             csWriter.WriteLines(text);
 
-            string parameters = string.Join(", ", new[] {$"callback: @escaping ({_methodDecl.CSSignature.First().SwiftTypeSpec}) -> Void"}.Concat(_methodDecl.CSSignature.Skip(1).Select(p => p.Name + ": " + p.SwiftTypeSpec)));
+            string parameters = string.Join(", ", new[] {$"callback: @escaping ({_env.MethodDecl.CSSignature.First().SwiftTypeSpec}, UnsafeRawPointer) -> Void", $"task: UnsafeRawPointer"}.Concat(_env.MethodDecl.CSSignature.Skip(1).Select(p => p.Name + ": " + p.SwiftTypeSpec)));
 
             text = $$"""
-            extension {{_methodDecl.ParentDecl!.Name}} {
-                @_silgen_name("{{_methodDecl.Name}}_async")
-                public func {{NameProvider.GetPInvokeName(_methodDecl)}}_async({{parameters}}) {
+            extension {{_env.MethodDecl.ParentDecl!.Name}} {
+                @_silgen_name("{{_env.MethodDecl.Name}}_async")
+                public func {{NameProvider.GetPInvokeName(_env.MethodDecl)}}_async({{parameters}}) {
                     Task {
-                        let result = await {{_methodDecl.Name}}({{string.Join(", ", _methodDecl.CSSignature.Skip(1).Select(p => p.Name+": "+p.Name))}})
-                        callback(result)
+                        let result = await {{_env.MethodDecl.Name}}({{string.Join(", ", _env.MethodDecl.CSSignature.Skip(1).Select(p => p.Name+": "+p.Name))}})
+                        callback(result, task)
                     }
                 }
             }
@@ -611,8 +591,8 @@ namespace BindingsGeneration
             var swiftIndirectResult = new SwiftIndirectResult((void*)_payload);
             """;
 
-            writer.WriteLines(text);
-            writer.WriteLine();
+            csWriter.WriteLines(text);
+            csWriter.WriteLine();
         }
 
 
@@ -633,14 +613,14 @@ namespace BindingsGeneration
             var swiftIndirectResult = new SwiftIndirectResult((void*)payload);
             """;
 
-            writer.WriteLines(text);
-            writer.WriteLine();
+            csWriter.WriteLines(text);
+            csWriter.WriteLine();
         }
 
         /// <summary>
         /// Emits the generic arguments setup.
         /// </summary>
-        private void EmitGenericArguments(IndentedTextWriter writer)
+        private void EmitGenericArguments(CSharpWriter csWriter, SwiftWriter swiftWriter)
         {
             foreach (var argument in _env.MethodDecl.CSSignature.Skip(1).Where(a => a.IsGeneric))
             {
@@ -650,9 +630,9 @@ namespace BindingsGeneration
                 {{payloadName}} = (IntPtr)NativeMemory.Alloc({{metadataName}}.Size);
                 SwiftMarshal.MarshalToSwift({{argument.Name}}, {{payloadName}});
                 """;
-                writer.WriteLines(text);
+                csWriter.WriteLines(text);
             }
-            writer.WriteLine();
+            csWriter.WriteLine();
         }
 
         /// <summary>
@@ -663,15 +643,15 @@ namespace BindingsGeneration
         {
             if (_requiresSwiftAsync)
             {
-                csWriter.WriteLine($"{NameProvider.GetPInvokeName(_env.MethodDecl)}(Marshal.GetFunctionPointerForDelegate(callbackDelegate), IntPtr.Zero, {_pInvokeSignature.CallArgumentsString()});");
+                csWriter.WriteLine($"{NameProvider.GetPInvokeName(_env.MethodDecl)}((IntPtr)s_{_env.MethodDecl.Name}Callback, IntPtr.Zero, GCHandle.ToIntPtr(handle), {_pInvokeSignature.CallArgumentsString()});");
                 csWriter.WriteLine();
             }
             else
             {
                 var voidReturn = _env.MethodDecl.CSSignature.First().SwiftTypeSpec.IsEmptyTuple;
                 var returnPrefix = (_requiresIndirectResult || voidReturn) ? "" : "var result = ";
-                writer.WriteLine($"{returnPrefix}{NameProvider.GetPInvokeName(_env.MethodDecl)}({_pInvokeSignature.CallArgumentsString()});");
-                writer.WriteLine();
+                csWriter.WriteLine($"{returnPrefix}{NameProvider.GetPInvokeName(_env.MethodDecl)}({_pInvokeSignature.CallArgumentsString()});");
+                csWriter.WriteLine();
             }
         }
 
@@ -750,15 +730,39 @@ namespace BindingsGeneration
                 true => $"<{string.Join(", ", _env.MethodDecl.GenericParameters.Select(p => _env.GenericTypeMapping[p.TypeName].PlaceholderName))}>",
                 false => ""
             };
-            writer.WriteLine($"public {_env.ParentDecl.Name}{genericParams}({_wrapperSignature.ParametersString()})");
+            csWriter.WriteLine($"public {_env.ParentDecl.Name}{genericParams}({_wrapperSignature.ParametersString()})");
         }
 
         /// <summary>
         /// Emits the method signature.
         /// </summary>
         /// <param name="writer">The IndentedTextWriter instance.</param>
-        private void EmitSignatureMethod(IndentedTextWriter writer)
+        private void EmitSignatureMethod(CSharpWriter csWriter, SwiftWriter swiftWriter)
         {
+            if (_requiresSwiftAsync)
+            {
+                var text = $$"""
+                
+                        private static unsafe delegate* unmanaged[Cdecl]<{{_wrapperSignature.ReturnType}}, IntPtr, void> s_{{_env.MethodDecl.Name}}Callback = &{{_env.MethodDecl.Name}}OnComplete;
+                        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+                        private static void {{_env.MethodDecl.Name}}OnComplete({{_wrapperSignature.ReturnType}} result, IntPtr task)
+                        {
+                            GCHandle handle = GCHandle.FromIntPtr(task);
+                            try
+                            {
+                                if (handle.Target is TaskCompletionSource<{{_wrapperSignature.ReturnType}}> tcs)
+                                {
+                                    tcs.TrySetResult(result);
+                                }
+                            }
+                            finally
+                            {
+                                handle.Free();
+                            }
+                        }
+                """;
+                csWriter.WriteLine(text);
+            }
             var genericParams = _env.MethodDecl.IsGeneric switch
             {
                 true => $"<{string.Join(", ", _env.MethodDecl.GenericParameters.Select(p => _env.GenericTypeMapping[p.TypeName].PlaceholderName))}>",
@@ -766,43 +770,49 @@ namespace BindingsGeneration
             };
 
             var staticKeyword = _env.MethodDecl.MethodType == MethodType.Static || _env.ParentDecl is ModuleDecl ? "static " : "";
-            var unsafeKeyword = _requiresIndirectResult || _env.MethodDecl.IsGeneric ? "unsafe " : "";
+            var unsafeKeyword = _requiresIndirectResult || _requiresSwiftAsync || _env.MethodDecl.IsGeneric ? "unsafe " : "";
 
-            writer.WriteLine($"public {staticKeyword}{unsafeKeyword}{_wrapperSignature.ReturnType} {_env.MethodDecl.Name}{genericParams}({_wrapperSignature.ParametersString()})");
+            var returnType = _wrapperSignature.ReturnType;
+            if (_requiresSwiftAsync)
+            {
+                returnType = $"Task<{returnType}>";
+            }
+
+            csWriter.WriteLine($"public {staticKeyword}{unsafeKeyword}{returnType} {_env.MethodDecl.Name}{genericParams}({_wrapperSignature.ParametersString()})");
         }
 
         /// <summary>
         /// Emits the finally block.
         /// </summary>
-        private void EmitFinally(IndentedTextWriter writer)
+        private void EmitFinally(CSharpWriter csWriter, SwiftWriter swiftWriter)
         {
-            writer.WriteLine("finally");
-            EmitBodyStart(writer);
+            csWriter.WriteLine("finally");
+            EmitBodyStart(csWriter, swiftWriter);
 
             foreach (var argument in _env.MethodDecl.CSSignature.Skip(1).Where(a => a.IsGeneric))
             {
                 var (_, _, payloadName) = _env.GenericTypeMapping[argument.SwiftTypeSpec.ToString()];
-                writer.WriteLine($"NativeMemory.Free((void*){payloadName});");
+                csWriter.WriteLine($"NativeMemory.Free((void*){payloadName});");
             }
 
-            EmitBodyEnd(writer);
+            EmitBodyEnd(csWriter, swiftWriter);
         }
 
         /// <summary>
         /// Emits the try block start.
         /// </summary>
-        private void EmitTryBlockStart(IndentedTextWriter writer)
+        private void EmitTryBlockStart(CSharpWriter csWriter, SwiftWriter swiftWriter)
         {
-            writer.WriteLine("try");
-            EmitBodyStart(writer);
+            csWriter.WriteLine("try");
+            EmitBodyStart(csWriter, swiftWriter);
         }
 
         /// <summary>
         /// Emits the try block end.
         /// </summary>
-        private void EmitTryBlockEnd(IndentedTextWriter writer)
+        private void EmitTryBlockEnd(CSharpWriter csWriter, SwiftWriter swiftWriter)
         {
-            EmitBodyEnd(writer);
+            EmitBodyEnd(csWriter, swiftWriter);
         }
 
         /// <summary>

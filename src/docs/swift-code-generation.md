@@ -25,47 +25,55 @@ public func waitFor(seconds: UInt64) async -> Int32 {
 
 Generated Swift wrapper:
 ```swift
-extension TimerStruct {
-    @_silgen_name("waitFor_async")
-    public func waitFor_async(callback: @escaping (Swift.Int32) -> Void, seconds: Swift.UInt64) {
-        Task {
-            let result = await waitFor(seconds: seconds)
-            callback(result)
+public struct TimerStruct {
+    let returnValue: Int32
+    
+    public init(returnValue: Int32) {
+        self.returnValue = returnValue
+    }
+    
+    public func waitFor(seconds: UInt64) async -> Int32 {
+        do {
+            try await Task.sleep(nanoseconds: seconds * 1_000_000_000)
+        } catch {
+            print("Failed to sleep: \(error)")
+            return -1
         }
+        return returnValue
     }
 }
 ```
 
 Generated C# code:
 ```csharp
-private GCHandle? _callbackHandle;
-[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-private delegate void CallbackDelegate(Int32 result);
-
-public unsafe  Task<Int32> waitFor( UInt64 seconds)
+private static unsafe delegate* unmanaged[Cdecl]<Int32, IntPtr, void> s_waitForCallback = &waitForOnComplete;
+[UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+private static void waitForOnComplete(Int32 result, IntPtr task)
+{
+    GCHandle handle = GCHandle.FromIntPtr(task);
+    try
+    {
+        if (handle.Target is TaskCompletionSource<Int32> tcs)
+        {
+            tcs.TrySetResult(result);
+        }
+    }
+    finally
+    {
+        handle.Free();
+    }
+}
+public unsafe Task<Int32> waitFor( UInt64 seconds)
 {
     TaskCompletionSource<Int32> task = new TaskCompletionSource<Int32>();
-    CallbackDelegate callbackDelegate = null;
-    callbackDelegate = (Int32 result) =>
-    {
-        try
-        {
-            task.TrySetResult(result);
-        }
-        finally
-        {
-            if (_callbackHandle.HasValue)
-            {
-                _callbackHandle.Value.Free();
-                _callbackHandle = null;
-            }
-        }
-    };
-    _callbackHandle = GCHandle.Alloc(callbackDelegate);
+    GCHandle handle = GCHandle.Alloc(task, GCHandleType.Normal);
+
     var self = new SwiftSelf((void*)_payload);
-    
-    waitFor(Marshal.GetFunctionPointerForDelegate(callbackDelegate), IntPtr.Zero, seconds, self);
-    
+    PInvoke_waitFor((IntPtr)s_waitForCallback, IntPtr.Zero, GCHandle.ToIntPtr(handle), seconds, self);
     return task.Task;
 }
+
+[UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+[DllImport(EntryPoint = "waitFor_async")]
+private static extern void PInvoke_waitFor(IntPtr callback, IntPtr context, IntPtr task,  UInt64 seconds,  SwiftSelf self);
 ```
