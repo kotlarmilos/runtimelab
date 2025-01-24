@@ -45,11 +45,14 @@ namespace BindingsGeneration
         /// <param name="typeDatabase">The type database instance.</param>
         public override IEnvironment? Marshal(BaseDecl decl, ITypeDatabase typeDatabase)
         {
-            // TODO: Make better interface between builders and handlers
-            var env = base.Marshal(decl, typeDatabase) as MethodEnvironment ?? throw new ArgumentNullException(nameof(MethodEnvironment));
-            env.MethodName = decl?.ParentDecl?.Name ?? throw new ArgumentNullException(nameof(MethodDecl));
-            env.ReturnType = string.Empty;
-            env.WrapperBuilder = new ConstructorWrapperBuilder();
+            MethodEnvironment? env = base.Marshal(decl, typeDatabase) as MethodEnvironment;
+            if (env != null)
+            {
+                // TODO: Make better interface between builders and handlers
+                env.MethodName = decl?.ParentDecl?.Name ?? throw new ArgumentNullException(nameof(MethodDecl));
+                env.ReturnType = string.Empty;
+                env.WrapperBuilder = new ConstructorWrapperBuilder();
+            }
             return env;
         }
     }

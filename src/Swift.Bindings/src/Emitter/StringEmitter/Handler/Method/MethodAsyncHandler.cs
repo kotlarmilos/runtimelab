@@ -60,6 +60,13 @@ namespace BindingsGeneration
                 return;
             }
 
+            // TODO: Add generics support
+            if (methodEnv.MethodDecl.GenericParameters.Count > 0)
+            {
+                Console.WriteLine($"Method {methodEnv.MethodDecl.Name} has unsupported generics");
+                return;
+            }
+
             string pinvokeName = NameProvider.GetPInvokeName(methodEnv.MethodDecl);
             string libPath = methodEnv.TypeDatabase.GetLibraryPath(moduleDecl.Name);
             Signature pinvokeSignature = signatureHandler.GetPInvokeSignature();

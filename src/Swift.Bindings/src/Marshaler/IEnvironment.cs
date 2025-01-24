@@ -73,7 +73,7 @@ namespace BindingsGeneration
     /// <param name="requiresSwiftAsync">A value indicating whether the method requires a Swift async parameter.</param>
     /// <param name="pInvokeBuilder">The PInvokeBuilder.</param>
     /// <param name="wrapperBuilder">The WrapperBuilder.</param>
-    public class MethodEnvironment(MethodDecl methodDecl, ITypeDatabase typeDatabase, Dictionary<string, GenericParameterCSName> genericTypeMapping, bool requiresIndirectResult, bool requiresSwiftSelf, bool requiresSwiftError, bool requiresSwiftAsync, PInvokeBuilder pInvokeBuilder, WrapperBuilder wrapperBuilder) : IEnvironment
+    public class MethodEnvironment(MethodDecl methodDecl, ITypeDatabase typeDatabase, Dictionary<string, GenericParameterCSName> genericTypeMapping, PInvokeBuilder pInvokeBuilder, WrapperBuilder wrapperBuilder) : IEnvironment
     {
         /// <summary>
         /// Gets the method declaration.
@@ -108,22 +108,22 @@ namespace BindingsGeneration
         /// <summary>
         /// Gets a value indicating whether the method requires an indirect result.
         /// </summary>
-        public bool RequiresIndirectResult { get; } = requiresIndirectResult;
+        public bool RequiresIndirectResult { get; set ; } = false;
 
         /// <summary>
         /// Gets a value indicating whether the method requires a Swift self parameter.
         /// </summary>
-        public bool RequiresSwiftSelf { get; } = requiresSwiftSelf;
+        public bool RequiresSwiftSelf { get; set ; } = false;
 
         /// <summary>
         /// Gets a value indicating whether the method requires a Swift error parameter.
         /// </summary>
-        public bool RequiresSwiftError { get; } = requiresSwiftError;
+        public bool RequiresSwiftError { get; set ; } = false;
 
         /// <summary>
         /// Gets a value indicating whether the method requires a Swift async parameter.
         /// </summary>
-        public bool RequiresSwiftAsync { get; } = requiresSwiftAsync;
+        public bool RequiresSwiftAsync { get; set ; } = false;
 
         /// <summary>
         /// Gets the PInvokeBuilder.

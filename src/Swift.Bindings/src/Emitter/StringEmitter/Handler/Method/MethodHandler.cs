@@ -56,15 +56,11 @@ namespace BindingsGeneration
                 return null;
             }
 
-            bool requiresIndirectResult = MarshallingHelpers.MethodRequiresIndirectResult(methodDecl, typeDatabase);
-            bool requiresSwiftSelf = MarshallingHelpers.MethodRequiresSwiftSelf(methodDecl);
-            bool requiresSwiftError = methodDecl.Throws;
-            bool requiresSwiftAsync = methodDecl.IsAsync;
             Dictionary<string, GenericParameterCSName> genericTypeMapping = NameProvider.GetGenericTypeMapping(methodDecl);
             PInvokeBuilder pInvokeBuilder = new PInvokeBuilder();
             WrapperBuilder wrapperBuilder = new WrapperBuilder();
 
-            MethodEnvironment env = new MethodEnvironment(methodDecl, typeDatabase, genericTypeMapping, requiresIndirectResult, requiresSwiftSelf, requiresSwiftError, requiresSwiftAsync, pInvokeBuilder, wrapperBuilder);
+            MethodEnvironment env = new MethodEnvironment(methodDecl, typeDatabase, genericTypeMapping, pInvokeBuilder, wrapperBuilder);
 
             // TODO: Fix circular dependency
             SignatureHandler signatureHandler = new SignatureHandler(env);
@@ -77,6 +73,10 @@ namespace BindingsGeneration
 
             env.MethodName = methodDecl.Name;
             env.ReturnType = signatureHandler.GetWrapperSignature().ReturnType;
+            env.RequiresIndirectResult = MarshallingHelpers.MethodRequiresIndirectResult(methodDecl, typeDatabase);
+            env.RequiresSwiftSelf = MarshallingHelpers.MethodRequiresSwiftSelf(methodDecl);
+            env.RequiresSwiftError = methodDecl.Throws;
+            env.RequiresSwiftAsync = methodDecl.IsAsync;
             return env;
         }
 
