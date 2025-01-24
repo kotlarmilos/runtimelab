@@ -29,7 +29,7 @@ namespace BindingsGeneration
         }
 
         /// <summary>
-        /// Emits a C# module based on the module declaration.
+        /// Emits a C# and Swift module based on the module declaration.
         /// </summary>
         /// <param name="moduleDecl">The module declaration.</param>
         public void EmitModule(ModuleDecl moduleDecl)
@@ -43,17 +43,22 @@ namespace BindingsGeneration
                 var @namespace = $"Swift.{moduleDecl.Name}";
 
                 var env = moduleHandler.Marshal(moduleDecl, _typeDatabase);
-                moduleHandler.Emit(csWriter, swiftWriter, env, _conductor);
+                if (env != null)
+                    moduleHandler.Emit(csWriter, swiftWriter, env, _conductor);
 
                 string csOutputPath = Path.Combine(_outputDirectory, $"{@namespace}.cs");
                 using (StreamWriter outputFile = new(csOutputPath))
                 {
                     outputFile.Write(csStringWriter.ToString());
                 }
-                string swiftOutputPath = Path.Combine(_outputDirectory, $"{@namespace}.swift");
-                using (StreamWriter outputFile = new(swiftOutputPath))
-                {
-                    outputFile.Write(swiftStringWriter.ToString());
+
+                if (swiftStringWriter.ToString().Length > 0)
+                {  
+                    string swiftOutputPath = Path.Combine(_outputDirectory, $"{@namespace}.swift");
+                    using (StreamWriter outputFile = new(swiftOutputPath))
+                    {
+                        outputFile.Write(swiftStringWriter.ToString());
+                    }
                 }
             }
             else

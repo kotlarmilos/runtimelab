@@ -96,7 +96,8 @@ namespace BindingsGeneration
                     if (conductor.TryGetMethodHandler(methodDecl, out var methodHandler))
                     {
                         var methodEnv = methodHandler.Marshal(methodDecl, env.TypeDatabase);
-                        methodHandler.Emit(csWriter, swiftWriter, methodEnv, conductor);
+                        if (methodEnv != null)
+                            methodHandler.Emit(csWriter, swiftWriter, methodEnv, conductor);
                     }
                     else
                     {

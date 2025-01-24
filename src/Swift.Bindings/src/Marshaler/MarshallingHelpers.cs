@@ -5,23 +5,23 @@ namespace BindingsGeneration
 {
     public static class MarshallingHelpers // TODO: Find better place for those
     {
-        public static bool MethodRequiresIndirectResult(MethodEnvironment env)
+        public static bool MethodRequiresIndirectResult(MethodDecl decl, ITypeDatabase typeDatabase)
         {
-            if (env.MethodDecl.IsConstructor && !(env.ParentDecl is StructDecl structDecl && StructIsMarshalledAsCSStruct(structDecl))) return true;
-            var returnType = env.MethodDecl.CSSignature.First();
+            if (decl.IsConstructor && !(decl.ParentDecl is StructDecl structDecl && StructIsMarshalledAsCSStruct(structDecl))) return true;
+            var returnType = decl.CSSignature.First();
 
             if (returnType.IsGeneric) return true;
             if (returnType.SwiftTypeSpec.IsEmptyTuple) return false;
 
-            if (!ArgumentIsMarshalledAsCSStruct(returnType, env.TypeDatabase)) return true;
+            if (!ArgumentIsMarshalledAsCSStruct(returnType, typeDatabase)) return true;
             return false;
         }
 
-        public static bool MethodRequiresSwiftSelf(MethodEnvironment env)
+        public static bool MethodRequiresSwiftSelf(MethodDecl decl)
         {
-            if (env.ParentDecl is ModuleDecl) return false; // global funcs
-            if (env.MethodDecl.MethodType == MethodType.Static) return false;
-            if (env.MethodDecl.IsConstructor) return false;
+            if (decl.ParentDecl is ModuleDecl) return false; // global funcs
+            if (decl.MethodType == MethodType.Static) return false;
+            if (decl.IsConstructor) return false;
 
             return true;
         }

@@ -66,12 +66,19 @@ namespace BindingsGeneration
     /// </remarks>
     /// <param name="methodDecl">The method declaration.</param>
     /// <param name="typeDatabase">The type database instance.</param>
-    public class MethodEnvironment(MethodDecl methodDecl, ITypeDatabase typeDatabase) : IEnvironment
+    /// <param name="GenericTypeMapping">The generic type mapping.</param>
+    /// <param name="requiresIndirectResult">A value indicating whether the method requires an indirect result.</param>
+    /// <param name="requiresSwiftSelf">A value indicating whether the method requires a Swift self parameter.</param>
+    /// <param name="requiresSwiftError">A value indicating whether the method requires a Swift error parameter.</param>
+    /// <param name="requiresSwiftAsync">A value indicating whether the method requires a Swift async parameter.</param>
+    /// <param name="pInvokeBuilder">The PInvokeBuilder.</param>
+    /// <param name="wrapperBuilder">The WrapperBuilder.</param>
+    public class MethodEnvironment(MethodDecl methodDecl, ITypeDatabase typeDatabase, Dictionary<string, GenericParameterCSName> genericTypeMapping, bool requiresIndirectResult, bool requiresSwiftSelf, bool requiresSwiftError, bool requiresSwiftAsync, PInvokeBuilder pInvokeBuilder, WrapperBuilder wrapperBuilder) : IEnvironment
     {
         /// <summary>
         /// Gets the method declaration.
         /// </summary>
-        public MethodDecl MethodDecl { get; private set; } = methodDecl;
+        public MethodDecl MethodDecl { get; init; } = methodDecl;
 
         /// <summary>
         /// Gets the parent declaration.
@@ -84,8 +91,48 @@ namespace BindingsGeneration
         public ITypeDatabase TypeDatabase { get; } = typeDatabase;
 
         /// <summary>
-        /// Mapping of Swift generic type names to C# generic type names.
+        /// Gets the generic type mapping.
         /// </summary>
-        public Dictionary<string, GenericParameterCSName> GenericTypeMapping { get; } = NameProvider.GetGenericTypeMapping(methodDecl);
+        public Dictionary<string, GenericParameterCSName> GenericTypeMapping { get; } = genericTypeMapping;
+
+        /// <summary>
+        /// Gets the method name.
+        /// </summary>
+        public string MethodName { get; set; } = methodDecl.Name;
+
+        /// <summary>
+        /// Gets the return type.
+        /// </summary>
+        public string ReturnType { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets a value indicating whether the method requires an indirect result.
+        /// </summary>
+        public bool RequiresIndirectResult { get; } = requiresIndirectResult;
+
+        /// <summary>
+        /// Gets a value indicating whether the method requires a Swift self parameter.
+        /// </summary>
+        public bool RequiresSwiftSelf { get; } = requiresSwiftSelf;
+
+        /// <summary>
+        /// Gets a value indicating whether the method requires a Swift error parameter.
+        /// </summary>
+        public bool RequiresSwiftError { get; } = requiresSwiftError;
+
+        /// <summary>
+        /// Gets a value indicating whether the method requires a Swift async parameter.
+        /// </summary>
+        public bool RequiresSwiftAsync { get; } = requiresSwiftAsync;
+
+        /// <summary>
+        /// Gets the PInvokeBuilder.
+        /// </summary>
+        public PInvokeBuilder PInvokeBuilder { get; set; } = pInvokeBuilder;
+
+        /// <summary>
+        /// Gets the WrapperBuilder.
+        /// </summary>
+        public WrapperBuilder WrapperBuilder { get; set; } = wrapperBuilder;
     }
 }

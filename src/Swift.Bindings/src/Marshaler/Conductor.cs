@@ -28,6 +28,8 @@ namespace BindingsGeneration
         ];
         private readonly List<IFieldHandlerFactory> _fieldHandlerFactories = [];
         private readonly List<IMethodHandlerFactory> _methodHandlerFactories = [
+            new MethodAsyncHandlerFactory(),
+            new MethodConstructorHandlerFactory(),
             new MethodHandlerFactory(),
         ];
         private readonly List<IArgumentHandlerFactory> _argumentHandlerFactories = [];
