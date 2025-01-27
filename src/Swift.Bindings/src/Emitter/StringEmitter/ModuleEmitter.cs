@@ -52,10 +52,13 @@ namespace BindingsGeneration
                     outputFile.Write(csStringWriter.ToString());
                 }
 
-                string swiftOutputPath = Path.Combine(_outputDirectory, $"{@namespace}.swift");
-                using (StreamWriter outputFile = new(swiftOutputPath))
-                {
-                    outputFile.Write(swiftStringWriter.ToString());
+                if (swiftStringWriter.ToString().Length > 0)
+                {  
+                    string swiftOutputPath = Path.Combine(_outputDirectory, $"{@namespace}.swift");
+                    using (StreamWriter outputFile = new(swiftOutputPath))
+                    {
+                        outputFile.Write(swiftStringWriter.ToString());
+                    }
                 }
             }
             else
