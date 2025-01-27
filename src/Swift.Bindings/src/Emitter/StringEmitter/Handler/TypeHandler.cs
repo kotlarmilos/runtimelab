@@ -68,7 +68,7 @@ namespace BindingsGeneration
             // Retrieve type info from the type database
             var typeRecord = env.TypeDatabase.GetTypeRecordOrThrow(moduleDecl.Name, structDecl.FullyQualifiedNameWithoutModule);
 
-            var ISwiftObjectMethodWriter = new ISwiftObjectMethodWriter(csWriter, swiftWriter, env.TypeDatabase, moduleDecl, structDecl);
+            var ISwiftObjectMethodWriter = new ISwiftObjectMethodWriter(csWriter, env.TypeDatabase, moduleDecl, structDecl);
 
             SwiftTypeInfo? swiftTypeInfo = typeRecord?.SwiftTypeInfo;
 
@@ -198,17 +198,17 @@ namespace BindingsGeneration
             var structDecl = (StructDecl)structEnv.TypeDecl;
             var moduleDecl = structDecl.ModuleDecl ?? throw new ArgumentNullException(nameof(structDecl.ModuleDecl));
 
-            var ISwiftObjectMethodWriter = new ISwiftObjectMethodWriter(csWriter, swiftWriter, env.TypeDatabase, moduleDecl, structDecl);
+            var ISwiftObjectMethodWriter = new ISwiftObjectMethodWriter(csWriter, env.TypeDatabase, moduleDecl, structDecl);
 
             csWriter.WriteLine($"public unsafe class {structDecl.Name} : IDisposable, {typeof(ISwiftObject).Name}");
             csWriter.WriteLine("{");
             csWriter.Indent++;
 
-            WritePrivateFields(csWriter, swiftWriter, structDecl);
-            WriteDisposeMethod(csWriter, swiftWriter);
-            WriteFinalizer(csWriter, swiftWriter, structDecl);
-            WritePayloadSize(csWriter, swiftWriter);
-            WritePayload(csWriter, swiftWriter);
+            WritePrivateFields(csWriter, structDecl);
+            WriteDisposeMethod(csWriter);
+            WriteFinalizer(csWriter, structDecl);
+            WritePayloadSize(csWriter);
+            WritePayload(csWriter);
 
             ISwiftObjectMethodWriter.WriteNonFrozenStructImplementation();
 
@@ -225,7 +225,7 @@ namespace BindingsGeneration
         /// <summary>
         /// Writes the private fields for the class.
         /// </summary>
-        private static void WritePrivateFields(CSharpWriter csWriter, SwiftWriter swiftWriter, StructDecl structDecl)
+        private static void WritePrivateFields(CSharpWriter csWriter, StructDecl structDecl)
         {
             csWriter.WriteLine($"static nuint _payloadSize = SwiftObjectHelper<{structDecl.Name}>.GetTypeMetadata().Size;");
             csWriter.WriteLine("SwiftHandle _payload = SwiftHandle.Zero;");
@@ -236,7 +236,7 @@ namespace BindingsGeneration
         /// <summary>
         /// Writes the Dispose method for the class.
         /// </summary>
-        private static void WriteDisposeMethod(CSharpWriter csWriter, SwiftWriter swiftWriter)
+        private static void WriteDisposeMethod(CSharpWriter csWriter)
         {
             var text = $$"""
             public void Dispose()
@@ -258,7 +258,7 @@ namespace BindingsGeneration
         /// <summary>
         /// Writes the finalizer for the class.
         /// </summary>
-        private static void WriteFinalizer(CSharpWriter csWriter, SwiftWriter swiftWriter, StructDecl structDecl)
+        private static void WriteFinalizer(CSharpWriter csWriter, StructDecl structDecl)
         {
             var text = $$"""
             ~{{structDecl.Name}}()
@@ -275,7 +275,7 @@ namespace BindingsGeneration
         /// <summary>
         /// Writes the payload size accessor for the class.
         /// </summary>
-        private static void WritePayloadSize(CSharpWriter csWriter, SwiftWriter swiftWriter)
+        private static void WritePayloadSize(CSharpWriter csWriter)
         {
             csWriter.WriteLine("public static nuint PayloadSize => _payloadSize;");
             csWriter.WriteLine();
@@ -284,7 +284,7 @@ namespace BindingsGeneration
         /// <summary>
         /// Writes the payload accessor for the class.
         /// </summary>
-        private static void WritePayload(CSharpWriter csWriter, SwiftWriter swiftWriter)
+        private static void WritePayload(CSharpWriter csWriter)
         {
             csWriter.WriteLine("public SwiftHandle Payload => _payload;");
             csWriter.WriteLine();
@@ -371,7 +371,7 @@ namespace BindingsGeneration
         private readonly ModuleDecl _moduleDecl;
         private readonly StructDecl _structDecl;
 
-        public ISwiftObjectMethodWriter(CSharpWriter csWriter, SwiftWriter swiftWriter, ITypeDatabase typeDatabase, ModuleDecl moduleDecl, StructDecl structDecl)
+        public ISwiftObjectMethodWriter(CSharpWriter csWriter, ITypeDatabase typeDatabase, ModuleDecl moduleDecl, StructDecl structDecl)
         {
             _writer = csWriter;
             _typeDatabase = typeDatabase;
