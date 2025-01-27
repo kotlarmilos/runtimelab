@@ -37,6 +37,11 @@ public class SwiftFunction {
     public required TypeSpec Return { get; init; }
 
     /// <summary>
+    /// Gets the IsAsync flag for the function
+    /// </summary>
+    public required bool IsAsync { get; init; }
+
+    /// <summary>
     /// Returns true if the give object is a SwiftFunction and matches this
     /// </summary>
     /// <param name="o"></param>
