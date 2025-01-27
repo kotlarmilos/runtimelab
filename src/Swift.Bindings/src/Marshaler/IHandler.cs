@@ -16,7 +16,7 @@ namespace BindingsGeneration
         /// </summary>
         /// <param name="baseDecl">The base declaration.</param>
         /// <returns>The environment corresponding to the base declaration.</returns>
-        IEnvironment? Marshal(BaseDecl baseDecl, ITypeDatabase typeDatabase);
+        IEnvironment Marshal(BaseDecl baseDecl, ITypeDatabase typeDatabase);
 
         /// <summary>
         /// Emits the necessary code for the specified environment.
@@ -83,8 +83,7 @@ namespace BindingsGeneration
                     if (conductor.TryGetTypeHandler(structDecl, out var handler))
                     {
                         var env = handler.Marshal(structDecl, typeDatabase);
-                        if (env != null)
-                            handler.Emit(csWriter, swiftWriter, env, conductor);
+                        handler.Emit(csWriter, swiftWriter, env, conductor);
                     }
                     else
                     {
@@ -96,8 +95,7 @@ namespace BindingsGeneration
                     if (conductor.TryGetTypeHandler(classDecl, out var handler))
                     {
                         var env = handler.Marshal(classDecl, typeDatabase);
-                        if (env != null)
-                            handler.Emit(csWriter, swiftWriter, env, conductor);
+                        handler.Emit(csWriter, swiftWriter, env, conductor);
                     }
                     else
                     {
@@ -109,8 +107,7 @@ namespace BindingsGeneration
                     if (conductor.TryGetMethodHandler(methodDecl, out var handler))
                     {
                         var env = handler.Marshal(methodDecl, typeDatabase);
-                        if (env != null)
-                            handler.Emit(csWriter, swiftWriter, env, conductor);
+                        handler.Emit(csWriter, swiftWriter, env, conductor);
                     }
                     else
                     {
