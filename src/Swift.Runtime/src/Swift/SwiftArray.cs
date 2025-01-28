@@ -45,7 +45,7 @@ public unsafe class SwiftArray<Element> : IDisposable, ISwiftObject
     static nuint _elementSize = ElementTypeMetadata.Size;
 
     // Swift array is a value type and doesn't contain an IntPtr payload
-    ArrayBuffer buffer;
+    public ArrayBuffer buffer;
     bool _disposed = false;
     public void Dispose()
     {
