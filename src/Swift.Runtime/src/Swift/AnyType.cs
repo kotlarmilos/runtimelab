@@ -10,7 +10,8 @@ namespace Swift;
 /// <summary>
 /// Represents placeholder for Swift type
 /// </summary>
-public struct AnyType : ISwiftObject {
+public struct AnyType : ISwiftObject
+{
     private SwiftHandle _payload = SwiftHandle.Zero;
     static TypeMetadata ISwiftObject.GetTypeMetadata()
     {
@@ -46,8 +47,9 @@ public struct AnyType : ISwiftObject {
         {
             throw new InvalidOperationException("Cannot marshal AnyType to Swift without payload");
         }
-        unsafe {
-            metadata.ValueWitnessTable->InitializeWithCopy((void *)swiftDest, (void *)_payload, metadata);
+        unsafe
+        {
+            metadata.ValueWitnessTable->InitializeWithCopy((void*)swiftDest, (void*)_payload, metadata);
         }
         return swiftDest;
     }

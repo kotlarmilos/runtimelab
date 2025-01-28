@@ -10,7 +10,8 @@ namespace Swift;
 /// <summary>
 /// Defines the possible cases for an optional type
 /// </summary>
-public enum SwiftOptionalCases : uint {
+public enum SwiftOptionalCases : uint
+{
     Some,
     None,
 }
@@ -36,7 +37,7 @@ public class SwiftOptional<T> : ISwiftObject
     /// <returns>The TypeMetadata for this object</returns>
     static TypeMetadata ISwiftObject.GetTypeMetadata()
     {
-        return TypeMetadata.Cache.GetOrAdd (typeof(SwiftOptional<T>), _ =>
+        return TypeMetadata.Cache.GetOrAdd(typeof(SwiftOptional<T>), _ =>
                 PInvokesForSwiftOptional._MetadataAccessor(TypeMetadataRequest.Complete, TypeMetadata.GetTypeMetadataOrThrow<T>()));
     }
 
@@ -47,8 +48,10 @@ public class SwiftOptional<T> : ISwiftObject
     {
         var metadata = SwiftObjectHelper<SwiftOptional<T>>.GetTypeMetadata();
         var instance = new SwiftOptional<T>();
-        unsafe {
-            fixed (byte* payloadPtr = instance._payload) {
+        unsafe
+        {
+            fixed (byte* payloadPtr = instance._payload)
+            {
                 metadata.ValueWitnessTable->InitializeWithCopy(payloadPtr, (byte*)payload, metadata);
                 return instance;
             }
@@ -63,9 +66,11 @@ public class SwiftOptional<T> : ISwiftObject
     IntPtr ISwiftObject.MarshalToSwift(IntPtr swiftDest)
     {
         var metadata = SwiftObjectHelper<SwiftOptional<T>>.GetTypeMetadata();
-        unsafe {
-            fixed (byte* payload = _payload) {
-                metadata.ValueWitnessTable->InitializeWithCopy((void *)swiftDest, payload, metadata);
+        unsafe
+        {
+            fixed (byte* payload = _payload)
+            {
+                metadata.ValueWitnessTable->InitializeWithCopy((void*)swiftDest, payload, metadata);
             }
         }
         return swiftDest;
@@ -76,9 +81,11 @@ public class SwiftOptional<T> : ISwiftObject
     /// </summary>
     public static SwiftOptional<T> NewSome(T value)
     {
-        unsafe {
+        unsafe
+        {
             var instance = new SwiftOptional<T>();
-            fixed (byte* payload = instance._payload) {
+            fixed (byte* payload = instance._payload)
+            {
                 var metadata = SwiftObjectHelper<SwiftOptional<T>>.GetTypeMetadata();
                 SwiftMarshal.MarshalToSwift(value, new IntPtr(payload));
                 metadata.ValueWitnessTable->DestructiveInjectEnumTag(payload, (uint)SwiftOptionalCases.Some, metadata);
@@ -92,9 +99,11 @@ public class SwiftOptional<T> : ISwiftObject
     /// </summary>
     public static SwiftOptional<T> NewNone()
     {
-        unsafe {
+        unsafe
+        {
             var instance = new SwiftOptional<T>();
-            fixed (byte* payload = instance._payload) {
+            fixed (byte* payload = instance._payload)
+            {
                 var metadata = SwiftObjectHelper<SwiftOptional<T>>.GetTypeMetadata();
                 metadata.ValueWitnessTable->DestructiveInjectEnumTag(payload, (uint)SwiftOptionalCases.None, metadata);
                 return instance;
@@ -105,10 +114,14 @@ public class SwiftOptional<T> : ISwiftObject
     /// <summary>
     /// Gets the case of the optional type
     /// </summary>
-    public SwiftOptionalCases Case {
-        get {
-            unsafe {
-                fixed (byte* payload = _payload) {
+    public SwiftOptionalCases Case
+    {
+        get
+        {
+            unsafe
+            {
+                fixed (byte* payload = _payload)
+                {
                     var metadata = SwiftObjectHelper<SwiftOptional<T>>.GetTypeMetadata();
                     return (SwiftOptionalCases)metadata.ValueWitnessTable->GetEnumTag(payload, metadata);
                 }
@@ -119,18 +132,23 @@ public class SwiftOptional<T> : ISwiftObject
     /// <summary>
     /// Gets the value of the optional type if the case is Some
     /// </summary>
-    public T Some {
-        get {
-            if (Case != SwiftOptionalCases.Some) {
+    public T Some
+    {
+        get
+        {
+            if (Case != SwiftOptionalCases.Some)
+            {
                 throw new InvalidOperationException("Cannot get Some when case is None");
             }
             var metadata = SwiftObjectHelper<SwiftOptional<T>>.GetTypeMetadata();
-            unsafe {
+            unsafe
+            {
                 Span<byte> payload = stackalloc byte[_payload.Length];
                 _payload.CopyTo(payload);
-                fixed (byte* payloadPtr = payload) {
-                    metadata.ValueWitnessTable->DestructiveProjectEnumData(payloadPtr, metadata);                  
-                    return SwiftMarshal.MarshalFromSwift<T>((SwiftHandle) new IntPtr (payloadPtr));
+                fixed (byte* payloadPtr = payload)
+                {
+                    metadata.ValueWitnessTable->DestructiveProjectEnumData(payloadPtr, metadata);
+                    return SwiftMarshal.MarshalFromSwift<T>((SwiftHandle)new IntPtr(payloadPtr));
                 }
             }
         }
@@ -139,11 +157,12 @@ public class SwiftOptional<T> : ISwiftObject
     /// <summary>
     /// Gets the value of the optional type if the case is Some or the default value if the case is None
     /// </summary>
-    public T? Value => Case switch {
-            SwiftOptionalCases.Some => Some,
-            SwiftOptionalCases.None => default(T),
-            _ => throw new SwiftRuntimeException(string.Format("Unknown case {0}", Case))
-        };
+    public T? Value => Case switch
+    {
+        SwiftOptionalCases.Some => Some,
+        SwiftOptionalCases.None => default(T),
+        _ => throw new SwiftRuntimeException(string.Format("Unknown case {0}", Case))
+    };
 
     /// <summary>
     /// Returns true if the case is Some
@@ -151,7 +170,8 @@ public class SwiftOptional<T> : ISwiftObject
     public bool HasValue => Case == SwiftOptionalCases.Some;
 }
 
-internal static  class PInvokesForSwiftOptional {
+internal static class PInvokesForSwiftOptional
+{
     [DllImport(KnownLibraries.SwiftCore, EntryPoint = "$sSqMa")]
     public static extern TypeMetadata _MetadataAccessor(TypeMetadataRequest request, TypeMetadata typeMetadata);
 }
