@@ -131,7 +131,19 @@ public class SwiftArrayTests : IClassFixture<SwiftArrayTests.TestFixture>
         Assert.Equal(1, array[1]);
         Assert.Equal(999999, array[count - 1]);
     }
-    
+
+    [Fact]
+    public unsafe void ArrayDispose()
+    {
+        var array = new SwiftArray<int>();
+        var payload = *(IntPtr*)array.buffer.storage;
+        var count = Arc.RetainCount(payload);
+
+        array.Dispose();
+
+        Assert.Equal(count - 1, Arc.RetainCount(payload));
+    }
+
     private static void PrimitiveArrayTest<T>(T value1, T value2, T overwriteValue) where T : unmanaged
         {
             var metadata = TypeMetadata.GetTypeMetadataOrThrow<SwiftArray<T>>();
